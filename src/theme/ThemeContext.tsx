@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>('auto');
 
   const value = useMemo<ThemeContextValue>(() => {
-    const resolved = mode === 'auto' ? (systemScheme ?? 'light') : mode;
+    const resolved = mode === 'auto' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
     return { theme: themes[resolved], mode, setMode };
   }, [mode, systemScheme]);
 
