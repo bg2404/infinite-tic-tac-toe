@@ -44,6 +44,8 @@ export function GameScreen() {
       <Board
         board={game.snapshot.board}
         vanishingIndex={game.vanishingIndex}
+        winner={game.snapshot.winner}
+        winLine={game.snapshot.winLine}
         disabled={game.snapshot.winner !== null || game.isAiTurn}
         onCellPress={game.place}
       />

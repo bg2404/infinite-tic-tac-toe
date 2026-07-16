@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useTheme } from '../theme/ThemeContext';
-import { RADIUS, VANISHING_OPACITY } from '../utils/constants';
+import { RADIUS, TERMINAL_DIM_OPACITY, VANISHING_OPACITY } from '../utils/constants';
 import { Mark } from '../utils/engine';
 
 interface CellProps {
@@ -16,6 +16,7 @@ interface CellProps {
   size: number;
   mark: Mark | null;
   isVanishing: boolean;
+  dimmed: boolean;
   disabled: boolean;
   onPress: (index: number) => void;
 }
@@ -26,9 +27,10 @@ interface MarkTokenProps {
   mark: Mark;
   size: number;
   isVanishing: boolean;
+  dimmed: boolean;
 }
 
-function MarkToken({ mark, size, isVanishing }: MarkTokenProps) {
+function MarkToken({ mark, size, isVanishing, dimmed }: MarkTokenProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(0.4);
 
@@ -36,12 +38,14 @@ function MarkToken({ mark, size, isVanishing }: MarkTokenProps) {
     scale.value = withSpring(1, { damping: 14, stiffness: 260 });
   }, [scale]);
 
+  const targetOpacity = isVanishing ? VANISHING_OPACITY : dimmed ? TERMINAL_DIM_OPACITY : 1;
+
   const style = useAnimatedStyle(
     () => ({
       transform: [{ scale: scale.value }],
-      opacity: withTiming(isVanishing ? VANISHING_OPACITY : 1, { duration: 220 }),
+      opacity: withTiming(targetOpacity, { duration: 220 }),
     }),
-    [isVanishing]
+    [targetOpacity]
   );
 
   return (
@@ -57,7 +61,7 @@ function MarkToken({ mark, size, isVanishing }: MarkTokenProps) {
   );
 }
 
-export function Cell({ index, size, mark, isVanishing, disabled, onPress }: CellProps) {
+export function Cell({ index, size, mark, isVanishing, dimmed, disabled, onPress }: CellProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
 
@@ -89,6 +93,7 @@ export function Cell({ index, size, mark, isVanishing, disabled, onPress }: Cell
           mark={mark}
           size={size}
           isVanishing={isVanishing}
+          dimmed={dimmed}
         />
       )}
     </AnimatedPressable>

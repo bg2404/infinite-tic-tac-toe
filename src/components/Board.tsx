@@ -2,19 +2,22 @@ import React, { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
 import { SPACING } from '../utils/constants';
-import { Board as BoardState } from '../utils/engine';
+import { Board as BoardState, Winner, WinLine } from '../utils/engine';
 import { Cell } from './Cell';
+import { WinOverlay } from './WinOverlay';
 
 interface BoardProps {
   board: BoardState;
   vanishingIndex: number | null;
+  winner: Winner;
+  winLine: WinLine | null;
   disabled: boolean;
   onCellPress: (index: number) => void;
 }
 
 const MAX_BOARD_SIZE = 340;
 
-export function Board({ board, vanishingIndex, disabled, onCellPress }: BoardProps) {
+export function Board({ board, vanishingIndex, winner, winLine, disabled, onCellPress }: BoardProps) {
   const [available, setAvailable] = useState<{ width: number; height: number } | null>(null);
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -27,6 +30,10 @@ export function Board({ board, vanishingIndex, disabled, onCellPress }: BoardPro
     : 0;
   const cellSize = (boardSize - SPACING.cellGap * 2) / 3;
 
+  // On a win, recede everything but the line; on a draw, recede it all.
+  const isDimmed = (index: number) =>
+    winner === 'draw' || (winLine !== null && !winLine.includes(index));
+
   return (
     <View style={styles.fill} onLayout={onLayout}>
       {boardSize > 0 && (
@@ -38,10 +45,14 @@ export function Board({ board, vanishingIndex, disabled, onCellPress }: BoardPro
               size={cellSize}
               mark={mark}
               isVanishing={index === vanishingIndex}
+              dimmed={isDimmed(index)}
               disabled={disabled || mark !== null}
               onPress={onCellPress}
             />
           ))}
+          {winner && (
+            <WinOverlay winner={winner} winLine={winLine} boardSize={boardSize} cellSize={cellSize} />
+          )}
         </View>
       )}
     </View>

@@ -19,11 +19,15 @@ export interface Mark {
 
 export type Board = ReadonlyArray<Mark | null>;
 
+export type WinLine = readonly [number, number, number];
+
 export interface Snapshot {
   board: Board;
   currentPlayer: Player;
   moveNumber: number;
   winner: Winner;
+  /** Cell indices of the completed line when winner is a player. */
+  winLine: WinLine | null;
 }
 
 export const otherPlayer = (player: Player): Player => (player === 'X' ? 'O' : 'X');
@@ -33,16 +37,22 @@ export const createInitialSnapshot = (): Snapshot => ({
   currentPlayer: 'X',
   moveNumber: 0,
   winner: null,
+  winLine: null,
 });
 
-export function calculateWinner(board: Board): Player | null {
-  for (const [a, b, c] of WIN_LINES) {
+export function findWinLine(board: Board): { player: Player; line: WinLine } | null {
+  for (const line of WIN_LINES) {
+    const [a, b, c] = line;
     const mark = board[a];
     if (mark && board[b]?.player === mark.player && board[c]?.player === mark.player) {
-      return mark.player;
+      return { player: mark.player, line };
     }
   }
   return null;
+}
+
+export function calculateWinner(board: Board): Player | null {
+  return findWinLine(board)?.player ?? null;
 }
 
 export function getAvailableMoves(board: Board): number[] {
@@ -88,14 +98,15 @@ export function applyMove(snapshot: Snapshot, index: number, mode: GameMode): Sn
     if (oldest !== null) board[oldest] = null;
   }
 
-  const winner = calculateWinner(board);
-  const isDraw = !winner && mode === 'classic' && board.every(Boolean);
+  const win = findWinLine(board);
+  const isDraw = !win && mode === 'classic' && board.every(Boolean);
 
   return {
     board,
     currentPlayer: otherPlayer(snapshot.currentPlayer),
     moveNumber,
-    winner: winner ?? (isDraw ? 'draw' : null),
+    winner: win?.player ?? (isDraw ? 'draw' : null),
+    winLine: win?.line ?? null,
   };
 }
 

@@ -18,6 +18,9 @@ export const MAX_ACTIVE_MARKS = 3;
 /** Opacity applied to the mark that will vanish on its owner's next move. */
 export const VANISHING_OPACITY = 0.3;
 
+/** Opacity for marks outside the winning line (or all marks on a draw). */
+export const TERMINAL_DIM_OPACITY = 0.35;
+
 /** Depth limit for the Hard minimax search in Infinite mode. */
 export const MINIMAX_DEPTH = 5;
 

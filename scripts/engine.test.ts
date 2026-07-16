@@ -31,10 +31,12 @@ console.log('Classic mode');
   // X: 0, 1, 2 wins along the top row (O plays 3, 4).
   const s = play([0, 3, 1, 4, 2], 'classic');
   expect('three in a row wins', s.winner === 'X');
+  expect('win line reported', JSON.stringify(s.winLine) === '[0,1,2]');
   expect('winning board rejects further moves', applyMove(s, 5, 'classic') === s);
 
   const draw = play([0, 4, 8, 1, 7, 6, 2, 5, 3], 'classic');
   expect('full board without a line is a draw', draw.winner === 'draw');
+  expect('draw has no win line', draw.winLine === null);
 
   const s2 = play([0], 'classic');
   expect('occupied cell is rejected', applyMove(s2, 0, 'classic') === s2);
@@ -66,6 +68,7 @@ console.log('Infinite mode — vanishing');
   const s5 = play([8, 0, 1, 2, 4, 6], 'infinite');
   const s6 = applyMove(s5, 7, 'infinite');
   expect('line surviving the vanish wins', s6.winner === 'X' && s6.board[8] === null);
+  expect('surviving win line reported', JSON.stringify(s6.winLine) === '[1,4,7]');
 }
 
 console.log('Immutability / undo semantics');
