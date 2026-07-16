@@ -41,14 +41,12 @@ export function GameScreen() {
         <StatusText snapshot={game.snapshot} />
       </View>
 
-      <View style={styles.boardArea}>
-        <Board
-          board={game.snapshot.board}
-          vanishingIndex={game.vanishingIndex}
-          disabled={game.snapshot.winner !== null || game.isAiTurn}
-          onCellPress={game.place}
-        />
-      </View>
+      <Board
+        board={game.snapshot.board}
+        vanishingIndex={game.vanishingIndex}
+        disabled={game.snapshot.winner !== null || game.isAiTurn}
+        onCellPress={game.place}
+      />
 
       <ControlDock
         canUndo={game.canUndo}
@@ -81,11 +79,7 @@ const styles = StyleSheet.create({
   },
   statusArea: {
     marginTop: 28,
-  },
-  boardArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 12,
   },
   footerArea: {
     marginTop: 18,

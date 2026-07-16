@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-  ZoomIn,
 } from 'react-native-reanimated';
 
 import { useTheme } from '../theme/ThemeContext';
@@ -23,6 +22,41 @@ interface CellProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+interface MarkTokenProps {
+  mark: Mark;
+  size: number;
+  isVanishing: boolean;
+}
+
+function MarkToken({ mark, size, isVanishing }: MarkTokenProps) {
+  const { theme } = useTheme();
+  const scale = useSharedValue(0.4);
+
+  useEffect(() => {
+    scale.value = withSpring(1, { damping: 14, stiffness: 260 });
+  }, [scale]);
+
+  const style = useAnimatedStyle(
+    () => ({
+      transform: [{ scale: scale.value }],
+      opacity: withTiming(isVanishing ? VANISHING_OPACITY : 1, { duration: 220 }),
+    }),
+    [isVanishing]
+  );
+
+  return (
+    <Animated.Text
+      style={[
+        styles.mark,
+        { fontSize: size * 0.46, color: mark.player === 'X' ? theme.x : theme.o },
+        style,
+      ]}
+    >
+      {mark.player}
+    </Animated.Text>
+  );
+}
+
 export function Cell({ index, size, mark, isVanishing, disabled, onPress }: CellProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
@@ -30,13 +64,6 @@ export function Cell({ index, size, mark, isVanishing, disabled, onPress }: Cell
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-
-  const markStyle = useAnimatedStyle(
-    () => ({
-      opacity: withTiming(isVanishing ? VANISHING_OPACITY : 1, { duration: 220 }),
-    }),
-    [isVanishing]
-  );
 
   return (
     <AnimatedPressable
@@ -57,17 +84,12 @@ export function Cell({ index, size, mark, isVanishing, disabled, onPress }: Cell
       ]}
     >
       {mark && (
-        <Animated.Text
+        <MarkToken
           key={`${mark.player}-${mark.placedAt}`}
-          entering={ZoomIn.springify().damping(14).stiffness(240)}
-          style={[
-            styles.mark,
-            { fontSize: size * 0.46, color: mark.player === 'X' ? theme.x : theme.o },
-            markStyle,
-          ]}
-        >
-          {mark.player}
-        </Animated.Text>
+          mark={mark}
+          size={size}
+          isVanishing={isVanishing}
+        />
       )}
     </AnimatedPressable>
   );
