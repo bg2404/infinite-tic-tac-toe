@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "infinite-tic-tac-toe",
+    "name": "Infinite",
     "slug": "infinite-tic-tac-toe",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121826",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
