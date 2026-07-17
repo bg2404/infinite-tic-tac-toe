@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!--
+      viewport-fit=cover lets the app draw behind the status bar and home
+      indicator. react-native-safe-area-context reads env(safe-area-inset-*)
+      on web, so the existing SafeAreaProvider insets the content correctly.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+    <title>Infinite</title>
+    <meta
+      name="description"
+      content="Tic-tac-toe with a vanishing twist: keep only three marks each, and the oldest disappears."
+    />
+
+    <!-- Installability -->
+    <link rel="manifest" href="manifest.json" />
+
+    <!--
+      iOS ignores most of the manifest for home-screen apps and reads these
+      instead. black-translucent puts the app's own canvas behind the clock.
+    -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Infinite" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+    <!-- The browser chrome tints to match whichever theme the app resolves to. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F4F6" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121826" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <style>
+      /*
+        Paint the canvas colour before React mounts, so launching from the home
+        screen doesn't flash white — and so the area behind a translucent status
+        bar is right from the first frame. Mirrors src/theme/themes.ts.
+      */
+      body {
+        background-color: #f3f4f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #121826;
+        }
+      }
+      /* A home-screen launch should feel native: no tap flash, no text select. */
+      body {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        overscroll-behavior: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+    <script>
+      // Service workers only run in a secure context (HTTPS or localhost), so
+      // this is a no-op when the app is served over plain HTTP on a LAN.
+      if ('serviceWorker' in navigator && window.isSecureContext) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function (err) {
+            console.warn('Service worker registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -37,6 +37,12 @@ const POS = [ORIGIN, ORIGIN + CELL_SIZE + GAP];
 const ANDROID_SAFE_DIAMETER = 72 / 108;
 
 /**
+ * A `maskable` web icon may be cropped to any shape; the spec guarantees only
+ * a centred circle of 80% of the icon's width.
+ */
+const MASKABLE_SAFE_DIAMETER = 0.8;
+
+/**
  * Distance from the artwork's centre to its outermost point: the bulge of an
  * outer cell's rounded corner. Fitting by this (rather than by the bounding
  * square's width) is what keeps the corners and the X's tip inside a circular
@@ -109,6 +115,17 @@ const androidForeground = (size) =>
 const androidBackground = (size) => svgDoc(size, `<rect width="${size}" height="${size}" fill="${BG}"/>`);
 
 /**
+ * Maskable web icon: full-bleed background with the artwork pulled into the
+ * 80% safe circle, so a launcher cropping it to a circle keeps the marks.
+ */
+const maskableIcon = (size) =>
+  svgDoc(
+    size,
+    `<rect width="${size}" height="${size}" fill="${BG}"/>` +
+      `<g transform="${fitInCircle(size, MASKABLE_SAFE_DIAMETER)}">${artwork()}</g>`
+  );
+
+/**
  * Android themed-icon layer: a single-colour silhouette. The cells are solid
  * and the marks are punched out of them, so the shape still reads as the game
  * once the launcher tints it.
@@ -131,27 +148,38 @@ const androidMonochrome = (size) => {
 };
 
 const assets = path.join(__dirname, '..', 'assets');
+const publicDir = path.join(__dirname, '..', 'public');
 
 async function main() {
-  const write = async (file, svg, { flatten = false, size } = {}) => {
+  fs.mkdirSync(publicDir, { recursive: true });
+
+  const write = async (dir, file, svg, { flatten = false, size } = {}) => {
     let img = sharp(Buffer.from(svg));
     if (size) img = img.resize(size, size);
     // iOS rejects an app icon containing an alpha channel, so the base icon is
     // composited onto the canvas colour and its alpha dropped.
     if (flatten) img = img.flatten({ background: BG }).removeAlpha();
-    await img.png().toFile(path.join(assets, file));
-    const meta = await sharp(path.join(assets, file)).metadata();
+    await img.png().toFile(path.join(dir, file));
+    const meta = await sharp(path.join(dir, file)).metadata();
     console.log(
-      `  ${file.padEnd(30)} ${String(meta.width).padStart(4)}x${meta.height}  alpha=${meta.hasAlpha}`
+      `  ${file.padEnd(28)} ${String(meta.width).padStart(4)}x${meta.height}  alpha=${meta.hasAlpha}`
     );
   };
 
-  console.log('Generating icons from theme tokens:');
-  await write('icon.png', fullIcon(), { flatten: true });
-  await write('favicon.png', fullIcon(), { size: 48 });
-  await write('android-icon-background.png', androidBackground(512));
-  await write('android-icon-foreground.png', androidForeground(512));
-  await write('android-icon-monochrome.png', androidMonochrome(432));
+  console.log('Native icons:');
+  await write(assets, 'icon.png', fullIcon(), { flatten: true });
+  await write(assets, 'favicon.png', fullIcon(), { size: 48 });
+  await write(assets, 'android-icon-background.png', androidBackground(512));
+  await write(assets, 'android-icon-foreground.png', androidForeground(512));
+  await write(assets, 'android-icon-monochrome.png', androidMonochrome(432));
+
+  console.log('Web / PWA icons:');
+  // Home-screen icons are composited opaque: iOS draws apple-touch-icon on a
+  // white plate if it has transparency, which would ruin the dark canvas.
+  await write(publicDir, 'icon-192.png', fullIcon(), { size: 192, flatten: true });
+  await write(publicDir, 'icon-512.png', fullIcon(), { size: 512, flatten: true });
+  await write(publicDir, 'icon-maskable-512.png', maskableIcon(512), { flatten: true });
+  await write(publicDir, 'apple-touch-icon.png', fullIcon(), { size: 180, flatten: true });
   console.log('Done.');
 }
 

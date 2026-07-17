@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Board } from '../components/Board';
 import { ControlDock } from '../components/ControlDock';
 import { Header } from '../components/Header';
+import { InstallBanner } from '../components/InstallBanner';
 import { Scoreboard } from '../components/Scoreboard';
 import { SettingsModal } from '../components/SettingsModal';
 import { StatusText } from '../components/StatusText';
@@ -59,6 +60,7 @@ export function GameScreen() {
       />
 
       <View style={styles.footerArea}>
+        <InstallBanner />
         <Scoreboard scores={game.scores} />
       </View>
 
@@ -85,5 +87,6 @@ const styles = StyleSheet.create({
   },
   footerArea: {
     marginTop: 18,
+    gap: 12,
   },
 });
