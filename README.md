@@ -38,6 +38,24 @@ npm run icons      # regenerate app + PWA icons from theme tokens
 npx tsc --noEmit   # type check
 ```
 
+## Deployment
+
+Live at **[bhaskergoel.com/tic-tac-toe](https://bhaskergoel.com/tic-tac-toe)**, served by
+its own Vercel project (`infinite-tic-tac-toe`) and proxied in from the main
+site via a rewrite in that site's `vercel.json`.
+
+Pushing to `main` deploys automatically. To deploy by hand:
+`npx vercel --prod`.
+
+Two details make the subpath work, and both must stay in sync if the path
+ever changes:
+
+- `experiments.baseUrl` in app.json — Expo emits the JS bundle at an absolute
+  path, so this is what points it at `/tic-tac-toe/…`.
+- `build:web` exports to `dist/tic-tac-toe/` — Vercel serves the output
+  directory at the domain root, so nesting it makes the served path match
+  `baseUrl`. Without this the bundle 404s.
+
 ## Install as a web app (PWA)
 
 The web build is an installable PWA — a home-screen icon that runs full-screen
