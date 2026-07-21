@@ -26,7 +26,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "npx --yes tsx scripts/engine.test.ts",
-    "icons": "node scripts/generate-icons.js"
+    "icons": "node scripts/generate-icons.js",
+    "build:web": "expo export --platform web"
   },
   "private": true
 }

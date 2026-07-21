@@ -46,8 +46,25 @@ install affordance: an **INSTALL** button on Chrome/Android, or
 Share → *Add to Home Screen* instructions on iOS Safari.
 
 ```sh
-npx expo export --platform web   # outputs dist/ (static, host anywhere)
-npx serve dist                   # or any static server, then open on your phone
+npm run build:web   # outputs dist/ — static files, host anywhere
+```
+
+The build is configured for **`bhaskergoel.com/tic-tac-toe`** via
+`experiments.baseUrl` in app.json — Expo emits the JS bundle at an absolute
+path, so that setting is what makes a subpath deploy work. To host it
+somewhere else, change `baseUrl` to match the new path (or delete it if
+serving from a domain root) and rebuild.
+
+Deploy by copying the contents of `dist/` to a `tic-tac-toe/` directory at
+the site root:
+
+```
+bhaskergoel.com/
+└── tic-tac-toe/        <- contents of dist/
+    ├── index.html
+    ├── manifest.json
+    ├── sw.js
+    └── _expo/…
 ```
 
 `public/` holds the PWA plumbing: `manifest.json`, `index.html` (Expo uses it

@@ -24,6 +24,9 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/tic-tac-toe"
+    }
   }
 }
