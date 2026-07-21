@@ -1,5 +1,5 @@
 /**
- * Generates every app icon asset from the design tokens in src/theme/themes.ts.
+ * Generates the web and PWA icons from the design tokens in src/theme/themes.ts.
  *
  *   node scripts/generate-icons.js
  *
@@ -28,13 +28,6 @@ const STROKE_RATIO = 0.105;
 
 const ORIGIN = (BASE - (2 * CELL_SIZE + GAP)) / 2; // 102
 const POS = [ORIGIN, ORIGIN + CELL_SIZE + GAP];
-
-/**
- * Android adaptive layers are masked by the launcher, and the mask can be a
- * full circle — so the guaranteed-visible region is a *circle* of 72/108 of
- * the canvas, not a square. Artwork is therefore inscribed by radius below.
- */
-const ANDROID_SAFE_DIAMETER = 72 / 108;
 
 /**
  * A `maskable` web icon may be cropped to any shape; the spec guarantees only
@@ -104,15 +97,8 @@ const svgDoc = (size, body) =>
 
 // --- Assets ----------------------------------------------------------------
 
-/** iOS/base icon: full-bleed background, artwork at its authored size. */
+/** Full-bleed icon: background edge to edge, artwork at its authored size. */
 const fullIcon = () => svgDoc(BASE, `<rect width="${BASE}" height="${BASE}" fill="${BG}"/>${artwork()}`);
-
-/** Android adaptive foreground: transparent, artwork inside the safe zone. */
-const androidForeground = (size) =>
-  svgDoc(size, `<g transform="${fitInCircle(size, ANDROID_SAFE_DIAMETER)}">${artwork()}</g>`);
-
-/** Android adaptive background: the canvas colour, edge to edge. */
-const androidBackground = (size) => svgDoc(size, `<rect width="${size}" height="${size}" fill="${BG}"/>`);
 
 /**
  * Maskable web icon: full-bleed background with the artwork pulled into the
@@ -125,28 +111,6 @@ const maskableIcon = (size) =>
       `<g transform="${fitInCircle(size, MASKABLE_SAFE_DIAMETER)}">${artwork()}</g>`
   );
 
-/**
- * Android themed-icon layer: a single-colour silhouette. The cells are solid
- * and the marks are punched out of them, so the shape still reads as the game
- * once the launcher tints it.
- */
-const androidMonochrome = (size) => {
-  const mask =
-    `<mask id="cut">` +
-    `<rect width="${BASE}" height="${BASE}" fill="black"/>` +
-    cellRects('white') +
-    xMark('black') +
-    oMark('black') +
-    `</mask>`;
-  return svgDoc(
-    size,
-    `<defs>${mask}</defs>` +
-      `<g transform="${fitInCircle(size, ANDROID_SAFE_DIAMETER)}">` +
-      `<rect width="${BASE}" height="${BASE}" fill="white" mask="url(#cut)"/>` +
-      `</g>`
-  );
-};
-
 const assets = path.join(__dirname, '..', 'assets');
 const publicDir = path.join(__dirname, '..', 'public');
 
@@ -156,8 +120,8 @@ async function main() {
   const write = async (dir, file, svg, { flatten = false, size } = {}) => {
     let img = sharp(Buffer.from(svg));
     if (size) img = img.resize(size, size);
-    // iOS rejects an app icon containing an alpha channel, so the base icon is
-    // composited onto the canvas colour and its alpha dropped.
+    // Home-screen icons are composited opaque: iOS plates a transparent
+    // apple-touch-icon on white, which would ruin the dark canvas.
     if (flatten) img = img.flatten({ background: BG }).removeAlpha();
     await img.png().toFile(path.join(dir, file));
     const meta = await sharp(path.join(dir, file)).metadata();
@@ -166,16 +130,8 @@ async function main() {
     );
   };
 
-  console.log('Native icons:');
-  await write(assets, 'icon.png', fullIcon(), { flatten: true });
+  console.log('Web icons:');
   await write(assets, 'favicon.png', fullIcon(), { size: 48 });
-  await write(assets, 'android-icon-background.png', androidBackground(512));
-  await write(assets, 'android-icon-foreground.png', androidForeground(512));
-  await write(assets, 'android-icon-monochrome.png', androidMonochrome(432));
-
-  console.log('Web / PWA icons:');
-  // Home-screen icons are composited opaque: iOS draws apple-touch-icon on a
-  // white plate if it has transparency, which would ruin the dark canvas.
   await write(publicDir, 'icon-192.png', fullIcon(), { size: 192, flatten: true });
   await write(publicDir, 'icon-512.png', fullIcon(), { size: 512, flatten: true });
   await write(publicDir, 'icon-maskable-512.png', maskableIcon(512), { flatten: true });

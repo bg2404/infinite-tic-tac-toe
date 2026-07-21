@@ -1,6 +1,6 @@
 # Infinite Tic-Tac-Toe
 
-An ad-free, minimalist Tic-Tac-Toe for iOS and Android, built with React Native, Expo, and TypeScript. Features a Classic mode and an Infinite (vanishing) mode, full Undo/Redo history, Pass & Play, and an AI opponent with four difficulty levels.
+An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeScript, shipped as an installable web app. Features a Classic mode and an Infinite (vanishing) mode, full Undo/Redo history, Pass & Play, and an AI opponent with four difficulty levels.
 
 ## Game modes
 
@@ -37,8 +37,8 @@ scripts/
 
 ```sh
 npm install
-npm start          # Expo dev server (press i / a for iOS / Android)
-npm run web        # run in the browser
+npm run web        # Expo dev server in the browser
+npm start          # Expo dev server (Expo Go, if you want it on a device)
 npm test           # engine tests
 npm run icons      # regenerate app + PWA icons from theme tokens
 npx tsc --noEmit   # type check
