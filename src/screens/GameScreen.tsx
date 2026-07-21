@@ -11,7 +11,7 @@ import { SettingsModal } from '../components/SettingsModal';
 import { StatusText } from '../components/StatusText';
 import { Opponent, useGameState } from '../hooks/useGameState';
 import { useTheme } from '../theme/ThemeContext';
-import { SPACING } from '../utils/constants';
+import { DEFAULT_CUSTOM_DEPTH, SPACING } from '../utils/constants';
 import { Difficulty, GameMode } from '../utils/engine';
 
 export function GameScreen() {
@@ -21,9 +21,10 @@ export function GameScreen() {
   const [mode, setMode] = useState<GameMode>('classic');
   const [opponent, setOpponent] = useState<Opponent>('human');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [customDepth, setCustomDepth] = useState<number>(DEFAULT_CUSTOM_DEPTH);
   const [settingsVisible, setSettingsVisible] = useState(false);
 
-  const game = useGameState({ mode, opponent, difficulty });
+  const game = useGameState({ mode, opponent, difficulty, customDepth });
 
   return (
     <View
@@ -68,9 +69,12 @@ export function GameScreen() {
         visible={settingsVisible}
         opponent={opponent}
         difficulty={difficulty}
+        customDepth={customDepth}
+        mode={mode}
         onClose={() => setSettingsVisible(false)}
         onOpponentChange={setOpponent}
         onDifficultyChange={setDifficulty}
+        onCustomDepthChange={setCustomDepth}
       />
     </View>
   );

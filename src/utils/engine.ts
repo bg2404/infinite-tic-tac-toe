@@ -9,7 +9,7 @@ import {
 export type Player = 'X' | 'O';
 export type Winner = Player | 'draw' | null;
 export type GameMode = 'classic' | 'infinite';
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
 export interface Mark {
   player: Player;
@@ -196,7 +196,7 @@ function findWinningMove(snapshot: Snapshot, mode: GameMode): number | null {
   return null;
 }
 
-function findBestMove(snapshot: Snapshot, mode: GameMode): number {
+function findBestMove(snapshot: Snapshot, mode: GameMode, depth: number): number {
   const ai = snapshot.currentPlayer;
   const opponent = otherPlayer(ai);
 
@@ -210,7 +210,6 @@ function findBestMove(snapshot: Snapshot, mode: GameMode): number {
   if (block !== null) return block;
 
   // 3. Otherwise search; center-first ordering favors tactical control.
-  const depth = mode === 'classic' ? MINIMAX_DEPTH_CLASSIC : MINIMAX_DEPTH;
   let bestScore = -Infinity;
   let bestMove = getAvailableMoves(snapshot.board)[0];
 
@@ -231,15 +230,33 @@ function randomMove(board: Board): number {
   return moves[Math.floor(Math.random() * moves.length)];
 }
 
-export function getAiMove(snapshot: Snapshot, mode: GameMode, difficulty: Difficulty): number | null {
+/**
+ * Search depth for a difficulty. Classic searches the whole game either way,
+ * so a custom depth only changes play in Infinite, where the board never
+ * fills and the search has no natural terminus.
+ */
+export function depthFor(mode: GameMode, difficulty: Difficulty, customDepth: number): number {
+  if (mode === 'classic') return MINIMAX_DEPTH_CLASSIC;
+  return difficulty === 'custom' ? customDepth : MINIMAX_DEPTH;
+}
+
+export function getAiMove(
+  snapshot: Snapshot,
+  mode: GameMode,
+  difficulty: Difficulty,
+  depth: number
+): number | null {
   if (snapshot.winner || getAvailableMoves(snapshot.board).length === 0) return null;
 
   switch (difficulty) {
     case 'easy':
       return randomMove(snapshot.board);
     case 'medium':
-      return Math.random() < 0.5 ? findBestMove(snapshot, mode) : randomMove(snapshot.board);
+      return Math.random() < 0.5
+        ? findBestMove(snapshot, mode, depth)
+        : randomMove(snapshot.board);
     case 'hard':
-      return findBestMove(snapshot, mode);
+    case 'custom':
+      return findBestMove(snapshot, mode, depth);
   }
 }

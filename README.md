@@ -10,7 +10,13 @@ An ad-free, minimalist Tic-Tac-Toe for iOS and Android, built with React Native,
 ## Features
 
 - **Undo / Redo** — every move is a snapshot on an immutable timeline; undo restores vanished marks perfectly. Against the AI, one undo reverts a full exchange (your move + the AI's reply).
-- **AI opponent** — Easy (random), Medium (50% optimal), Hard (immediate win → immediate block → depth-limited minimax with alpha-beta pruning that simulates the vanishing mechanic during search).
+- **AI opponent** — Easy (random), Medium (50% optimal), Hard (immediate win →
+  immediate block → depth-limited minimax with alpha-beta pruning that simulates
+  the vanishing mechanic during search), and **Custom**, which exposes the search
+  depth (3/5/7/9) in Settings. Depth only affects Infinite mode — Classic already
+  searches the whole game at Hard, so it plays identically at any depth.
+  Measured worst-case move cost in Infinite: 3 → ~1ms, 5 → ~2ms, 7 → ~12ms,
+  9 → ~39ms.
 - **Theme engine** — Light / Dark / Auto with instant switching, no reload.
 - **Scandinavian-minimalist UI** — borderless floating cells, spring micro-animations via Reanimated, session scoreboard.
 

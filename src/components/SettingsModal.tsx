@@ -5,17 +5,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Opponent } from '../hooks/useGameState';
 import { useTheme } from '../theme/ThemeContext';
 import { ThemeMode } from '../theme/themes';
-import { RADIUS } from '../utils/constants';
-import { Difficulty } from '../utils/engine';
+import { DEPTH_OPTIONS, RADIUS } from '../utils/constants';
+import { Difficulty, GameMode } from '../utils/engine';
 import { SegmentedControl } from './SegmentedControl';
 
 interface SettingsModalProps {
   visible: boolean;
   opponent: Opponent;
   difficulty: Difficulty;
+  customDepth: number;
+  mode: GameMode;
   onClose: () => void;
   onOpponentChange: (opponent: Opponent) => void;
   onDifficultyChange: (difficulty: Difficulty) => void;
+  onCustomDepthChange: (depth: number) => void;
 }
 
 const OPPONENT_OPTIONS = [
@@ -27,6 +30,7 @@ const DIFFICULTY_OPTIONS = [
   { label: 'Easy', value: 'easy' },
   { label: 'Medium', value: 'medium' },
   { label: 'Hard', value: 'hard' },
+  { label: 'Custom', value: 'custom' },
 ] as const;
 
 const THEME_OPTIONS = [
@@ -49,9 +53,12 @@ export function SettingsModal({
   visible,
   opponent,
   difficulty,
+  customDepth,
+  mode,
   onClose,
   onOpponentChange,
   onDifficultyChange,
+  onCustomDepthChange,
 }: SettingsModalProps) {
   const { theme, mode: themeMode, setMode: setThemeMode } = useTheme();
   const insets = useSafeAreaInsets();
@@ -85,6 +92,23 @@ export function SettingsModal({
             />
           </SettingRow>
         </View>
+
+        {difficulty === 'custom' && (
+          <View
+            style={{ opacity: mode === 'infinite' ? 1 : 0.35 }}
+            pointerEvents={mode === 'infinite' ? 'auto' : 'none'}
+          >
+            <SettingRow
+              label={mode === 'infinite' ? 'SEARCH DEPTH' : 'SEARCH DEPTH (INFINITE ONLY)'}
+            >
+              <SegmentedControl
+                options={DEPTH_OPTIONS.map((d) => ({ label: String(d), value: String(d) }))}
+                value={String(customDepth)}
+                onChange={(v) => onCustomDepthChange(Number(v))}
+              />
+            </SettingRow>
+          </View>
+        )}
 
         <SettingRow label="THEME">
           <SegmentedControl<ThemeMode>

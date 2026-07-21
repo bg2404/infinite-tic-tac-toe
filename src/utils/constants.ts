@@ -27,6 +27,15 @@ export const MINIMAX_DEPTH = 5;
 /** Classic boards are finite, so Hard can afford a full-depth search. */
 export const MINIMAX_DEPTH_CLASSIC = 9;
 
+/**
+ * Depths offered by the Custom difficulty. Only meaningful in Infinite mode:
+ * Classic is exhaustive at 9 regardless, so depth changes nothing there.
+ * Measured worst-case move cost in Infinite: 3 -> ~1ms, 5 -> ~2ms,
+ * 7 -> ~12ms, 9 -> ~39ms.
+ */
+export const DEPTH_OPTIONS = [3, 5, 7, 9] as const;
+export const DEFAULT_CUSTOM_DEPTH = 7;
+
 /** Delay before the AI plays, so the exchange reads naturally. */
 export const AI_MOVE_DELAY_MS = 420;
 

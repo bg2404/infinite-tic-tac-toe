@@ -5,6 +5,7 @@ import {
   applyMove,
   countMarks,
   createInitialSnapshot,
+  depthFor,
   Difficulty,
   GameMode,
   getAiMove,
@@ -19,6 +20,8 @@ export interface GameSettings {
   mode: GameMode;
   opponent: Opponent;
   difficulty: Difficulty;
+  /** Search depth used when difficulty is 'custom'. */
+  customDepth: number;
 }
 
 export interface Scores {
@@ -42,7 +45,7 @@ const freshTimeline = (): Timeline => ({ history: [createInitialSnapshot()], poi
  * timeline; Undo/Redo only move the pointer, which is what lets vanished
  * marks reappear perfectly — the old board was never mutated.
  */
-export function useGameState({ mode, opponent, difficulty }: GameSettings) {
+export function useGameState({ mode, opponent, difficulty, customDepth }: GameSettings) {
   const [timeline, setTimeline] = useState<Timeline>(freshTimeline);
   const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 });
 
@@ -103,11 +106,11 @@ export function useGameState({ mode, opponent, difficulty }: GameSettings) {
   useEffect(() => {
     if (!isAiTurn || !atTip) return;
     const timer = setTimeout(() => {
-      const move = getAiMove(snapshot, mode, difficulty);
+      const move = getAiMove(snapshot, mode, difficulty, depthFor(mode, difficulty, customDepth));
       if (move !== null) commitMove(move);
     }, AI_MOVE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isAiTurn, atTip, snapshot, mode, difficulty, commitMove]);
+  }, [isAiTurn, atTip, snapshot, mode, difficulty, customDepth, commitMove]);
 
   // Infinite mode: the current player's oldest mark vanishes on their next
   // placement once they have all three marks down — surface it for the UI.
