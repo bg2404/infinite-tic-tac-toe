@@ -18,8 +18,14 @@
       content="Tic-tac-toe with a vanishing twist: keep only three marks each, and the oldest disappears."
     />
 
-    <!-- Installability -->
-    <link rel="manifest" href="manifest.json" />
+    <!--
+      Installability. These paths are absolute and must match
+      experiments.baseUrl in app.json: a relative href resolves against the
+      parent directory when the app is opened without a trailing slash
+      (/tic-tac-toe rather than /tic-tac-toe/), which silently pointed the
+      manifest and service worker at the site root.
+    -->
+    <link rel="manifest" href="/tic-tac-toe/manifest.json" />
 
     <!--
       iOS ignores most of the manifest for home-screen apps and reads these
@@ -29,7 +35,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Tic-Tac-Toe" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/tic-tac-toe/apple-touch-icon.png" />
 
     <!-- The browser chrome tints to match whichever theme the app resolves to. -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F4F6" />
@@ -85,7 +91,7 @@
       // this is a no-op when the app is served over plain HTTP on a LAN.
       if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('sw.js').catch(function (err) {
+          navigator.serviceWorker.register('/tic-tac-toe/sw.js', { scope: '/tic-tac-toe/' }).catch(function (err) {
             console.warn('Service worker registration failed:', err);
           });
         });
