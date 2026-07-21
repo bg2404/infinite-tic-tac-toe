@@ -27,7 +27,7 @@
     "web": "expo start --web",
     "test": "npx --yes tsx scripts/engine.test.ts",
     "icons": "node scripts/generate-icons.js",
-    "build:web": "expo export --platform web"
+    "build:web": "expo export --platform web --output-dir dist/tic-tac-toe"
   },
   "private": true
 }

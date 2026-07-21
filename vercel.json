@@ -3,6 +3,7 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "framework": null,
+  "redirects": [{ "source": "/", "destination": "/tic-tac-toe", "permanent": false }],
   "headers": [
     {
       "source": "/tic-tac-toe/sw.js",
