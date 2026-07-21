@@ -46,18 +46,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else (hashed bundle, icons, manifest) is cache-first.
+  const path = new URL(request.url).pathname;
+  // Metro content-hashes these, so a changed file always has a new URL and the
+  // cached copy can never go stale.
+  const isImmutable = path.includes('/_expo/') || path.includes('/assets/');
+
+  if (isImmutable) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok && response.type === 'basic') {
+              const copy = response.clone();
+              caches.open(CACHE).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+      )
+    );
+    return;
+  }
+
+  // Everything else (manifest, icons) keeps a stable filename, so serve the
+  // cached copy for speed but refresh it in the background — otherwise an
+  // edit to those files would never reach an already-installed app.
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
-        // Only cache complete, same-origin successes.
-        if (response.ok && response.type === 'basic') {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      });
+      const network = fetch(request)
+        .then((response) => {
+          if (response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => cached);
+      return cached || network;
     })
   );
 });

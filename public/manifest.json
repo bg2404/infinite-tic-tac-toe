@@ -1,6 +1,6 @@
 {
   "name": "Infinite Tic-Tac-Toe",
-  "short_name": "Infinite",
+  "short_name": "Tic-Tac-Toe",
   "description": "Tic-tac-toe with a vanishing twist: keep only three marks each, and the oldest disappears.",
   "start_url": ".",
   "scope": ".",
@@ -8,7 +8,9 @@
   "orientation": "portrait",
   "background_color": "#121826",
   "theme_color": "#121826",
-  "categories": ["games"],
+  "categories": [
+    "games"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
