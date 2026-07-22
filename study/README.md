@@ -1,7 +1,10 @@
 # Solving Infinite mode
 
-An exact solve of the Infinite (3-mark vanishing) variant, plus a grading of
-the shipped AI against it.
+An exact solve of the Infinite (3-mark vanishing) variant, and a measurement
+of how the variant behaves under depth-limited search.
+
+None of this changes the game. The scripts are additive; nothing under `src/`
+depends on them.
 
 Infinite mode cannot be solved by minimax. The board never fills — six marks
 maximum on nine cells — so there is no draw by exhaustion and no natural
