@@ -1,7 +1,10 @@
 # Solving Infinite mode
 
-An exact solve of the Infinite (3-mark vanishing) variant, plus a grading of
-the shipped AI against it.
+An exact solve of the Infinite (3-mark vanishing) variant, and a measurement
+of how the variant behaves under depth-limited search.
+
+None of this changes the game. The scripts are additive; nothing under `src/`
+depends on them.
 
 Infinite mode cannot be solved by minimax. The board never fills — six marks
 maximum on nine cells — so there is no draw by exhaustion and no natural
@@ -25,6 +28,7 @@ reachable from the empty board, and the solve takes about 120 ms.
 | `analyze-strategy.ts` | Principal variations, the draw cycles, and how forgiving each phase of the game is. |
 | `depth-study.ts` | Question 3: exhaustive blunder rate by search depth, the odd/even parity diagnostic, and survival against a perfect opponent. |
 | `horizon.ts` | Deep search (to 16 plies) on drawn positions, where no depth ever reaches a terminal node. |
+| `parity.ts` | Whether the odd/even split is usable at runtime, without a tablebase. |
 | `emit-figure-data.ts` | Emits the exact numbers quoted in the write-up, as JSON. |
 
 Run any of them with `npx tsx study/<name>.ts`. `depth-study.ts` takes about
@@ -86,3 +90,36 @@ won ones throughout.
 There is a ceiling — depth 16 blunders in none of the 13,193 drawn positions —
 but it is an empirical property of this evaluation function, not a theorem like
 classic tic-tac-toe's provable depth 9.
+
+**The parity split is usable, not just observable.** A real engine has no
+tablebase, but it can compare its move at two adjacent depths. When depth `d`
+and `d+1` disagree, `d`'s blunder rate jumps by 20–34x:
+
+| Pair | Depths disagree | Blunder \| disagree | Blunder \| agree | Lift |
+| --- | --- | --- | --- | --- |
+| 6→7 | 6.9% | 51.24% | 1.81% | 28.3x |
+| 7→8 | 6.3% | 33.35% | 1.66% | 20.1x |
+| 9→10 | 5.1% | 44.01% | 1.31% | 33.7x |
+| 10→11 | 4.8% | 6.33% | 1.33% | 4.8x |
+
+That set is small (5–7% of positions) but holds 55–68% of the blunders, so it
+works as a cheap runtime flag for "this position is not resolved" — the kind of
+signal that is available in games far too large to solve. It also fires exactly
+where the theory says it should: at every pair, disagreement is roughly ten
+times more common in drawn positions (9–12%) than in won ones (0.3–2.3%),
+which is the missing-terminal-node effect showing up without an oracle. The
+signal does weaken at the deepest pair measured (10→11, 4.8x lift, 19% recall).
+
+**Given one more ply, spend it on parity rather than depth — above depth 5.**
+Blunder rate over a balanced 26,386-position sample:
+
+| From | +1 ply (to even) | +2 plies (to odd) |
+| --- | --- | --- |
+| 5 (7.08%) | 5.22% | **3.67%** |
+| 7 (3.67%) | **3.30%** | 3.48% |
+| 9 (3.48%) | **1.57%** | 1.94% |
+
+From depth 7 and 9 the single even ply is both cheaper and better than two more
+plies. From depth 5 it is not — there, raw depth still wins, so the rule only
+holds once the search is deep enough for parity to dominate the remaining
+error.
