@@ -64,10 +64,9 @@ What it found:
   never do, at any depth.
 
 [`study/README.md`](study/README.md) has the numbers and the correctness
-argument. The write-up is at
-[bhaskergoel.com/blog/solving-infinite-tic-tac-toe](https://bhaskergoel.com/blog/solving-infinite-tic-tac-toe),
-with an interactive playground at
-[bhaskergoel.com/tic-tac-toe-lab](https://bhaskergoel.com/tic-tac-toe-lab).
+argument. The write-up, which carries an interactive playground over the
+solution, is at
+[bhaskergoel.com/blog/solving-infinite-tic-tac-toe](https://bhaskergoel.com/blog/solving-infinite-tic-tac-toe).
 
 ## Run
 
