@@ -1,11 +1,12 @@
-# Infinite Tic-Tac-Toe
+# Tic Tac Toe
 
-An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeScript, shipped as an installable web app. Features a Classic mode and an Infinite (vanishing) mode, full Undo/Redo history, Pass & Play, and an AI opponent with four difficulty levels.
+An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeScript, shipped as an installable web app. Three variants — Classic, Infinite (vanishing), and Quantum (superposition and collapse) — with full Undo/Redo history, Pass & Play, an in-app rules sheet per variant, and an AI opponent with four difficulty levels.
 
 ## Game modes
 
 - **Classic** — standard rules; the game ends on three-in-a-row or a full board.
 - **Infinite** — each player keeps at most **3 marks** on the board. Placing a 4th mark instantly removes that player's oldest mark. The mark that will vanish next is shown at 30% opacity. Lines completed only *through* the vanishing mark do not count — the removal happens before the win check.
+- **Quantum** — Goff's quantum tic-tac-toe. Each move places a *spooky mark*: one symbol superposed across **two** cells, tagged with its move number. Marks sharing a cell are entangled; when a move closes a loop in that entanglement graph, the loop is measured and collapses to classical marks. The player who did **not** close the loop picks which of the two consistent outcomes happens. Sudden death: the first completed line wins, and if one collapse completes a line for both players, each line is ranked by its highest move number and the lower one (formed earlier) takes it.
 
 ## Features
 
@@ -17,6 +18,17 @@ An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeSc
   searches the whole game at Hard, so it plays identically at any depth.
   Measured worst-case move cost in Infinite: 3 → ~1ms, 5 → ~2ms, 7 → ~12ms,
   9 → ~39ms.
+- **Quantum AI** — a separate engine ([`src/utils/quantumAi.ts`](src/utils/quantumAi.ts)),
+  because none of the classical machinery transfers. Turns do not alternate in
+  Quantum (whoever did not close a loop both measures it *and* moves next), so
+  every search node is labelled with its decision-maker rather than assuming
+  alternation; the search therefore discovers on its own that closing a loop
+  hands the collapse choice to the opponent. Iterative deepening with alpha-beta
+  and move ordering under a time budget, scoring positions by fractional line
+  potential (collapsed marks count fully, superposed ones partially, contested
+  lines are dead). Budgets: Medium ~90ms, Hard ~350ms, Custom scales with the
+  chosen depth up to ~900ms per move — so on Quantum the depth setting behaves
+  as "think this hard", not a literal ply count.
 - **Theme engine** — Light / Dark / Auto with instant switching, no reload.
 - **Scandinavian-minimalist UI** — borderless floating cells, spring micro-animations via Reanimated, session scoreboard.
 
@@ -24,16 +36,25 @@ An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeSc
 
 ```
 src/
-  components/   Board, Cell, Header, StatusText, ControlDock, Scoreboard, SettingsModal, SegmentedControl
-  hooks/        useGameState — immutable history timeline + AI scheduling
-  screens/      GameScreen
+  components/   Board, Cell, Header, StatusText, ControlDock, Scoreboard,
+                SettingsModal, SegmentedControl, RulesModal, QuantumBoard
+  hooks/        useGameState, useQuantumGame — immutable history timelines + AI scheduling
+  screens/      GameScreen (Classic/Infinite), QuantumGame
   theme/        themes + ThemeProvider (light/dark/auto)
-  utils/        constants, engine (pure TS: rules, vanish logic, minimax AI)
+  utils/        constants, engine (rules, vanish logic, minimax AI),
+                quantum (entanglement + collapse), quantumAi
 scripts/
-  engine.test.ts  engine sanity tests
+  engine.test.ts   Classic/Infinite engine sanity tests
+  quantum.test.ts  Quantum engine + AI tests, incl. a fuzz pass over the
+                   structural invariants (forest-at-rest, unique subscripts, …)
 study/
   an exact solve of Infinite mode — see below
 ```
+
+Classic/Infinite and Quantum share the theme, board chrome, and history
+pattern, but their engines are fully separate: Quantum's state is a partial
+classical board plus an entanglement forest, which the classical `Board`/`Mark`
+types cannot express.
 
 ## The solution
 
@@ -74,7 +95,7 @@ solution, is at
 npm install
 npm run web        # Expo dev server in the browser
 npm start          # Expo dev server (Expo Go, if you want it on a device)
-npm test           # engine tests
+npm test           # engine tests (Classic/Infinite + Quantum)
 npm run icons      # regenerate app + PWA icons from theme tokens
 npx tsc --noEmit   # type check
 ```
@@ -93,6 +114,12 @@ npx tsx study/depth-study.ts       # blunder rate by search depth (~6 min)
 Live at **[bhaskergoel.com/tic-tac-toe](https://bhaskergoel.com/tic-tac-toe)**, served by
 its own Vercel project (`infinite-tic-tac-toe`) and proxied in from the main
 site via a rewrite in that site's `vercel.json`.
+
+The Vercel project is still named `infinite-tic-tac-toe`, and the repository
+directory still uses the old name too. Both are deliberate: the main site's
+rewrite points at this project's deployment URL, which derives from the project
+name, so renaming it there would break the proxy until the other repo is
+updated in step. Only the app's display name changed.
 
 Pushing to `main` deploys automatically. To deploy by hand:
 `npx vercel --prod`.

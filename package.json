@@ -1,5 +1,5 @@
 {
-  "name": "infinite-tic-tac-toe",
+  "name": "tic-tac-toe",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
@@ -17,13 +17,14 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "metro-runtime": "0.83.3",
     "sharp": "^0.35.3",
     "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
     "web": "expo start --web",
-    "test": "npx --yes tsx scripts/engine.test.ts",
+    "test": "npx --yes tsx scripts/engine.test.ts && npx --yes tsx scripts/quantum.test.ts",
     "icons": "node scripts/generate-icons.js",
     "build:web": "expo export --platform web --output-dir dist/tic-tac-toe"
   },

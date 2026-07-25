@@ -63,6 +63,9 @@ export function SettingsModal({
   const { theme, mode: themeMode, setMode: setThemeMode } = useTheme();
   const insets = useSafeAreaInsets();
 
+  // Depth only changes play where the board never fills; Classic is exhaustive.
+  const depthApplies = mode === 'infinite' || mode === 'quantum';
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
@@ -83,7 +86,10 @@ export function SettingsModal({
           <SegmentedControl options={OPPONENT_OPTIONS} value={opponent} onChange={onOpponentChange} />
         </SettingRow>
 
-        <View style={{ opacity: opponent === 'ai' ? 1 : 0.35 }} pointerEvents={opponent === 'ai' ? 'auto' : 'none'}>
+        <View
+          style={{ opacity: opponent === 'ai' ? 1 : 0.35 }}
+          pointerEvents={opponent === 'ai' ? 'auto' : 'none'}
+        >
           <SettingRow label="AI DIFFICULTY">
             <SegmentedControl
               options={DIFFICULTY_OPTIONS}
@@ -95,12 +101,10 @@ export function SettingsModal({
 
         {difficulty === 'custom' && (
           <View
-            style={{ opacity: mode === 'infinite' ? 1 : 0.35 }}
-            pointerEvents={mode === 'infinite' ? 'auto' : 'none'}
+            style={{ opacity: depthApplies ? 1 : 0.35 }}
+            pointerEvents={depthApplies ? 'auto' : 'none'}
           >
-            <SettingRow
-              label={mode === 'infinite' ? 'SEARCH DEPTH' : 'SEARCH DEPTH (INFINITE ONLY)'}
-            >
+            <SettingRow label={depthApplies ? 'SEARCH DEPTH' : 'SEARCH DEPTH (NOT IN CLASSIC)'}>
               <SegmentedControl
                 options={DEPTH_OPTIONS.map((d) => ({ label: String(d), value: String(d) }))}
                 value={String(customDepth)}
@@ -155,3 +159,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+
