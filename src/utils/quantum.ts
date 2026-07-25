@@ -63,6 +63,8 @@ export interface QuantumSnapshot {
   pending: PendingCollapse | null;
   winner: Winner;
   winLine: WinLine | null;
+  /** True when both players completed a line on the same collapse and subscript order decided it. */
+  winByTieBreak: boolean;
 }
 
 export const createInitialQuantumSnapshot = (): QuantumSnapshot => ({
@@ -74,6 +76,7 @@ export const createInitialQuantumSnapshot = (): QuantumSnapshot => ({
   pending: null,
   winner: null,
   winLine: null,
+  winByTieBreak: false,
 });
 
 /** A cell is available for a new spooky mark until it has collapsed. */
@@ -278,11 +281,12 @@ function preferEarlier(a: CompletedLine, b: CompletedLine): CompletedLine {
 function evaluateOutcome(collapsed: ReadonlyArray<ClassicalMark | null>): {
   winner: Winner;
   winLine: WinLine | null;
+  winByTieBreak: boolean;
 } {
   const lines = completedLines(collapsed);
   if (lines.length === 0) {
     const full = collapsed.every((cell) => cell !== null);
-    return { winner: full ? 'draw' : null, winLine: null };
+    return { winner: full ? 'draw' : null, winLine: null, winByTieBreak: false };
   }
   // Best (earliest) line for each player, then the earlier of those wins.
   const best = new Map<Player, CompletedLine>();
@@ -292,7 +296,11 @@ function evaluateOutcome(collapsed: ReadonlyArray<ClassicalMark | null>): {
   }
   const contenders = [...best.values()];
   const winning = contenders.reduce((acc, l) => preferEarlier(acc, l));
-  return { winner: winning.player, winLine: winning.line };
+  return {
+    winner: winning.player,
+    winLine: winning.line,
+    winByTieBreak: contenders.length > 1,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +383,7 @@ export function resolveCollapse(
     (mark) => !measured.has(mark.cells[0]) || !measured.has(mark.cells[1])
   );
 
-  const { winner, winLine } = evaluateOutcome(collapsed);
+  const { winner, winLine, winByTieBreak } = evaluateOutcome(collapsed);
 
   return {
     ...snapshot,
@@ -385,6 +393,7 @@ export function resolveCollapse(
     pending: null,
     winner,
     winLine,
+    winByTieBreak,
   };
 }
 
@@ -401,7 +410,7 @@ export function placeForced(snapshot: QuantumSnapshot, cell: number): QuantumSna
   const collapsed = snapshot.collapsed.map((c, i) =>
     i === cell ? { player: snapshot.currentPlayer, subscript: id } : c
   );
-  const { winner, winLine } = evaluateOutcome(collapsed);
+  const { winner, winLine, winByTieBreak } = evaluateOutcome(collapsed);
 
   return {
     ...snapshot,
@@ -411,6 +420,7 @@ export function placeForced(snapshot: QuantumSnapshot, cell: number): QuantumSna
     phase: winner ? 'gameover' : 'placing',
     winner,
     winLine,
+    winByTieBreak,
   };
 }
 

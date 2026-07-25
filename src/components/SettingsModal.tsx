@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Opponent } from '../hooks/useGameState';
 import { useTheme } from '../theme/ThemeContext';
 import { ThemeMode } from '../theme/themes';
-import { DEPTH_OPTIONS, RADIUS } from '../utils/constants';
+import { DEPTH_OPTIONS, RADIUS, THINK_TIME_OPTIONS } from '../utils/constants';
 import { Difficulty, GameMode } from '../utils/engine';
 import { SegmentedControl } from './SegmentedControl';
 
@@ -104,9 +104,23 @@ export function SettingsModal({
             style={{ opacity: depthApplies ? 1 : 0.35 }}
             pointerEvents={depthApplies ? 'auto' : 'none'}
           >
-            <SettingRow label={depthApplies ? 'SEARCH DEPTH' : 'SEARCH DEPTH (NOT IN CLASSIC)'}>
+            <SettingRow
+              label={
+                mode === 'quantum'
+                  ? depthApplies
+                    ? 'THINK TIME'
+                    : 'THINK TIME (NOT IN CLASSIC)'
+                  : depthApplies
+                    ? 'SEARCH DEPTH'
+                    : 'SEARCH DEPTH (NOT IN CLASSIC)'
+              }
+            >
               <SegmentedControl
-                options={DEPTH_OPTIONS.map((d) => ({ label: String(d), value: String(d) }))}
+                options={
+                  mode === 'quantum'
+                    ? THINK_TIME_OPTIONS.map((o) => ({ label: o.label, value: String(o.value) }))
+                    : DEPTH_OPTIONS.map((d) => ({ label: String(d), value: String(d) }))
+                }
                 value={String(customDepth)}
                 onChange={(v) => onCustomDepthChange(Number(v))}
               />

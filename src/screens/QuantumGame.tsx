@@ -119,9 +119,11 @@ export function QuantumGame({ opponent, difficulty, customDepth }: QuantumGamePr
               {snapshot.winner}
             </Text> Wins
           </Text>
-          <Text style={[styles.hint, { color: theme.textMuted }]}>
-            Earliest completed line takes it
-          </Text>
+          {snapshot.winByTieBreak ? (
+            <Text style={[styles.hint, { color: theme.textMuted }]}>
+              Both lines completed — earliest subscript wins
+            </Text>
+          ) : null}
         </>
       );
     }

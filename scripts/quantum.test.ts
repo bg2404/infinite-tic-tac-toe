@@ -19,6 +19,7 @@ import {
   SpookyMark,
 } from '../src/utils/quantum';
 import { getQuantumMove, QuantumAiMove } from '../src/utils/quantumAi';
+import { redoActorRun, undoActorRun } from '../src/utils/timelineNav';
 import { Difficulty, Player } from '../src/utils/engine';
 
 let failures = 0;
@@ -141,6 +142,7 @@ console.log('\nWinning');
     expect(`outcome ${option + 1}: X takes the top row`, done.winner === 'X');
     expect(`outcome ${option + 1}: win line reported`, done.winLine?.join(',') === '0,1,2');
     expect(`outcome ${option + 1}: game is over`, done.phase === 'gameover');
+    expect(`outcome ${option + 1}: no tie-break subtitle`, done.winByTieBreak === false);
   }
 }
 
@@ -177,10 +179,12 @@ console.log('\nSimultaneous lines: lowest max-subscript wins');
   const xEarlier = resolveCollapse(craft([1, 2, 3], [4, 5, 6]), 0);
   expect('X wins when its highest subscript is lower', xEarlier.winner === 'X');
   expect('X win line is the top row', xEarlier.winLine?.join(',') === '0,1,2');
+  expect('simultaneous lines flag the tie-break', xEarlier.winByTieBreak === true);
 
   const oEarlier = resolveCollapse(craft([4, 5, 6], [1, 2, 3]), 0);
   expect('O wins when its highest subscript is lower', oEarlier.winner === 'O');
   expect('O win line is the bottom row', oEarlier.winLine?.join(',') === '6,7,8');
+  expect('O simultaneous win also flags the tie-break', oEarlier.winByTieBreak === true);
 
   // Only the maximum matters, not the sum: X's max 4 beats O's max 5.
   const byMaxNotSum = resolveCollapse(craft([1, 2, 4], [3, 3, 5]), 0);
@@ -365,6 +369,35 @@ console.log('\nAI');
     const outcome = move ? applyAiMove(s, move) : s;
     expect(`${difficulty}: takes an immediately winning measurement`, outcome.winner === 'X');
   }
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nUndo/redo actor-run navigation (vs AI)');
+// ---------------------------------------------------------------------------
+{
+  type P = 'X' | 'O' | null;
+
+  // Normal exchange: human place, AI place.
+  const normal: P[] = [null, 'X', 'O'];
+  expect('normal undo returns to before the human move', undoActorRun(normal, 2, 'O') === 0);
+  expect('normal redo restores the full exchange', redoActorRun(normal, 0, 'O') === 2);
+
+  // Cycle close: human place → AI measure → AI place (three snapshots).
+  const cycle: P[] = [null, 'X', 'O', 'O'];
+  expect('cycle undo skips both AI decisions', undoActorRun(cycle, 3, 'O') === 0);
+  expect('cycle redo restores measure + place', redoActorRun(cycle, 0, 'O') === 3);
+  expect('mid-AI undo still lands before the human move', undoActorRun(cycle, 2, 'O') === 0);
+
+  // Human measure + place after AI closed a cycle, then AI reply.
+  const humanDouble: P[] = [null, 'X', 'O', 'X', 'X', 'O'];
+  expect(
+    'human measure+place undoes as one turn',
+    undoActorRun(humanDouble, 5, 'O') === 2
+  );
+  expect(
+    'redo after that restores measure, place, and AI reply',
+    redoActorRun(humanDouble, 2, 'O') === 5
+  );
 }
 
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);

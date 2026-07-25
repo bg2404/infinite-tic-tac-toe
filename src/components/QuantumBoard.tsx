@@ -203,7 +203,7 @@ function QuantumCell({
   const label = classical
     ? `${classical.player}, collapsed`
     : ghosts.length
-      ? `${ghosts.length} superposed marks`
+      ? `${ghosts.length} superposed mark${ghosts.length === 1 ? '' : 's'}`
       : 'empty';
 
   return (

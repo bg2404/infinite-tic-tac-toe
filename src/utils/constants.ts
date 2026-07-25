@@ -28,11 +28,18 @@ export const MINIMAX_DEPTH = 5;
 export const MINIMAX_DEPTH_CLASSIC = 9;
 
 /**
- * Depths offered by the Custom difficulty. Only meaningful in Infinite mode:
- * Classic is exhaustive at 9 regardless, so depth changes nothing there.
- * Measured worst-case move cost in Infinite: 3 -> ~1ms, 5 -> ~2ms,
- * 7 -> ~12ms, 9 -> ~39ms.
+ * Think-time presets offered by Custom difficulty. Values still feed the
+ * existing depth/budget planner; labels are honest about wall-clock think
+ * time rather than promising a ply depth the beam+budget rarely reach.
  */
+export const THINK_TIME_OPTIONS = [
+  { label: 'Fast', value: 3 },
+  { label: 'Normal', value: 5 },
+  { label: 'Slow', value: 7 },
+  { label: 'Deep', value: 9 },
+] as const;
+
+/** @deprecated Prefer THINK_TIME_OPTIONS; kept for Infinite-mode numeric depths. */
 export const DEPTH_OPTIONS = [3, 5, 7, 9] as const;
 export const DEFAULT_CUSTOM_DEPTH = 7;
 

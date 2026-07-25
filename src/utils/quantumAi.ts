@@ -137,10 +137,32 @@ function terminalValue(snapshot: QuantumSnapshot, ai: Player, depth: number): nu
  *  without discarding plausible moves the way a narrow one does. */
 const BEAM = 18;
 
+interface TtEntry {
+  depth: number;
+  score: number;
+}
+
 interface SearchCtx {
   ai: Player;
   deadline: number;
   aborted: boolean;
+  tt: Map<string, TtEntry>;
+}
+
+/** Compact key for transposition: classical board + forest + phase + mover. */
+function ttKey(snapshot: QuantumSnapshot): string {
+  const collapsed = snapshot.collapsed
+    .map((c) => (c ? `${c.player}${c.subscript}` : '-'))
+    .join('');
+  const spooky = snapshot.spooky
+    .map((m) => `${m.id}:${m.player}:${m.cells[0]}-${m.cells[1]}`)
+    .slice()
+    .sort()
+    .join('|');
+  const pending = snapshot.pending
+    ? `${snapshot.pending.chooser}:${[...snapshot.pending.cyclicEdgeIds].sort().join(',')}`
+    : '';
+  return `${collapsed};${spooky};${snapshot.phase};${pending};${decisionMaker(snapshot)}`;
 }
 
 /** Order children best-first for the mover; beam only away from the leaves. */
@@ -162,19 +184,29 @@ function search(
 ): number {
   const terminal = terminalValue(snapshot, ctx.ai, depth);
   if (terminal !== null) return terminal;
-  if (depth === 0) return evaluate(snapshot, ctx.ai);
+
+  // Quiescence: never evaluate mid-measurement — resolve the collapse first
+  // without spending a ply (only two children, so the cost is tiny).
+  const pendingCollapse = snapshot.phase === 'choosingCollapse' && snapshot.pending !== null;
+  if (depth === 0 && !pendingCollapse) return evaluate(snapshot, ctx.ai);
+
   if (ctx.aborted || Date.now() > ctx.deadline) {
     ctx.aborted = true;
     return evaluate(snapshot, ctx.ai);
   }
 
+  const key = ttKey(snapshot);
+  const hit = ctx.tt.get(key);
+  if (hit && hit.depth >= depth) return hit.score;
+
   const dm = decisionMaker(snapshot);
   const maximizing = dm === ctx.ai;
-  const children = orderAndBeam(genChildren(snapshot), dm, depth);
+  const children = orderAndBeam(genChildren(snapshot), dm, Math.max(depth, 1));
   let best = maximizing ? -Infinity : Infinity;
+  const childDepth = pendingCollapse ? depth : depth - 1;
 
   for (const { snap } of children) {
-    const value = search(snap, depth - 1, alpha, beta, ctx);
+    const value = search(snap, childDepth, alpha, beta, ctx);
     if (maximizing) {
       best = Math.max(best, value);
       alpha = Math.max(alpha, value);
@@ -184,6 +216,8 @@ function search(
     }
     if (beta <= alpha) break;
   }
+
+  if (!ctx.aborted) ctx.tt.set(key, { depth, score: best });
   return best;
 }
 
@@ -214,6 +248,7 @@ function bestBySearch(
   budgetMs: number
 ): QuantumAiMove {
   const deadline = Date.now() + budgetMs;
+  const tt = new Map<string, TtEntry>();
   let ordered = children
     .map((c) => ({ c, q: evaluate(c.snap, ai) }))
     .sort((x, y) => y.q - x.q)
@@ -221,7 +256,7 @@ function bestBySearch(
   let bestMove = ordered[0].move;
 
   for (let depth = 1; depth <= maxDepth; depth += 1) {
-    const ctx: SearchCtx = { ai, deadline, aborted: false };
+    const ctx: SearchCtx = { ai, deadline, aborted: false, tt };
     const scores = new Map<Child, number>();
     let localBest = ordered[0];
     let localVal = -Infinity;

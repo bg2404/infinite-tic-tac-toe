@@ -10,7 +10,9 @@ import {
   QuantumSnapshot,
   resolveCollapse,
 } from '../utils/quantum';
-import { getQuantumMove, QuantumAiMove } from '../utils/quantumAi';
+import { getQuantumMoveAsync } from '../utils/quantumAiAsync';
+import { QuantumAiMove } from '../utils/quantumAi';
+import { redoActorRun, undoActorRun } from '../utils/timelineNav';
 import { AI_PLAYER, Opponent } from './useGameState';
 
 export interface Scores {
@@ -28,10 +30,16 @@ export interface QuantumSettings {
 
 interface Timeline {
   history: QuantumSnapshot[];
+  /** Who committed the transition that produced history[i]; null at index 0. */
+  actors: Array<Player | null>;
   pointer: number;
 }
 
-const freshTimeline = (): Timeline => ({ history: [createInitialQuantumSnapshot()], pointer: 0 });
+const freshTimeline = (): Timeline => ({
+  history: [createInitialQuantumSnapshot()],
+  actors: [null],
+  pointer: 0,
+});
 
 /** Whoever must decide now: the chooser mid-measurement, else the mover. */
 const decisionMaker = (snapshot: QuantumSnapshot): Player =>
@@ -62,15 +70,16 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
   const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 });
   const [selected, setSelected] = useState<number | null>(null);
 
-  const { history, pointer } = timeline;
+  const { history, actors, pointer } = timeline;
   const snapshot = history[pointer];
   const atTip = pointer === history.length - 1;
   const isAiTurn =
     opponent === 'ai' && snapshot.phase !== 'gameover' && decisionMaker(snapshot) === AI_PLAYER;
 
-  const pushSnapshot = useCallback((next: QuantumSnapshot) => {
+  const pushSnapshot = useCallback((next: QuantumSnapshot, actor: Player) => {
     setTimeline((prev) => ({
       history: [...prev.history.slice(0, prev.pointer + 1), next],
+      actors: [...prev.actors.slice(0, prev.pointer + 1), actor],
       pointer: prev.pointer + 1,
     }));
     if (next.winner) {
@@ -92,11 +101,12 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
     (cell: number) => {
       if (isAiTurn || snapshot.phase !== 'placing') return;
 
+      const actor = decisionMaker(snapshot);
       const forced = forcedCell(snapshot);
       if (forced !== null) {
         setSelected(null);
         const next = placeForced(snapshot, forced);
-        if (next !== snapshot) pushSnapshot(next);
+        if (next !== snapshot) pushSnapshot(next, actor);
         return;
       }
 
@@ -110,7 +120,7 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
       }
       const next = placeSpooky(snapshot, selected, cell);
       setSelected(null);
-      if (next !== snapshot) pushSnapshot(next);
+      if (next !== snapshot) pushSnapshot(next, actor);
     },
     [isAiTurn, snapshot, selected, pushSnapshot]
   );
@@ -119,27 +129,34 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
   const chooseCollapse = useCallback(
     (optionIndex: 0 | 1) => {
       if (isAiTurn || snapshot.phase !== 'choosingCollapse') return;
+      const actor = decisionMaker(snapshot);
       const next = resolveCollapse(snapshot, optionIndex);
-      if (next !== snapshot) pushSnapshot(next);
+      if (next !== snapshot) pushSnapshot(next, actor);
     },
     [isAiTurn, snapshot, pushSnapshot]
   );
 
-  // Against the AI a single undo/redo spans a full exchange (your move + its reply).
-  const stride = opponent === 'ai' ? 2 : 1;
-
   const undo = useCallback(() => {
     setSelected(null);
-    setTimeline((prev) => ({ ...prev, pointer: Math.max(0, prev.pointer - stride) }));
-  }, [stride]);
+    setTimeline((prev) => ({
+      ...prev,
+      pointer:
+        opponent === 'ai'
+          ? undoActorRun(prev.actors, prev.pointer, AI_PLAYER)
+          : Math.max(0, prev.pointer - 1),
+    }));
+  }, [opponent]);
 
   const redo = useCallback(() => {
     setSelected(null);
     setTimeline((prev) => ({
       ...prev,
-      pointer: Math.min(prev.history.length - 1, prev.pointer + stride),
+      pointer:
+        opponent === 'ai'
+          ? redoActorRun(prev.actors, prev.pointer, AI_PLAYER)
+          : Math.min(prev.history.length - 1, prev.pointer + 1),
     }));
-  }, [stride]);
+  }, [opponent]);
 
   const reset = useCallback(() => {
     setSelected(null);
@@ -159,14 +176,20 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
   // Let the AI act whenever it owns the decision at the tip of the timeline —
   // this fires once per decision, so it chains a collapse choice into the
   // placement that follows it. Never mid-history: a redo landing on the AI's
-  // turn must not fork it.
+  // turn must not fork it. Search runs off-thread when a Worker is available.
   useEffect(() => {
     if (!isAiTurn || !atTip) return;
+    let cancelled = false;
     const timer = setTimeout(() => {
-      const move = getQuantumMove(snapshot, difficulty, customDepth);
-      if (move) pushSnapshot(applyAiMove(snapshot, move));
+      void getQuantumMoveAsync(snapshot, difficulty, customDepth).then((move) => {
+        if (cancelled || !move) return;
+        pushSnapshot(applyAiMove(snapshot, move), AI_PLAYER);
+      });
     }, AI_MOVE_DELAY_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [isAiTurn, atTip, snapshot, difficulty, customDepth, pushSnapshot]);
 
   return {
