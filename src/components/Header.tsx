@@ -10,18 +10,29 @@ interface HeaderProps {
   mode: GameMode;
   onModeChange: (mode: GameMode) => void;
   onOpenSettings: () => void;
+  onOpenInfo: () => void;
 }
 
 const MODE_OPTIONS = [
   { label: 'Classic', value: 'classic' },
   { label: 'Infinite', value: 'infinite' },
+  { label: 'Quantum', value: 'quantum' },
 ] as const;
 
-export function Header({ mode, onModeChange, onOpenSettings }: HeaderProps) {
+export function Header({ mode, onModeChange, onOpenSettings, onOpenInfo }: HeaderProps) {
   const { theme } = useTheme();
 
   return (
     <View style={styles.header}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="How to play"
+        hitSlop={12}
+        onPress={onOpenInfo}
+        style={({ pressed }) => [styles.info, pressed && styles.iconPressed]}
+      >
+        <Ionicons name="information-circle-outline" size={24} color={theme.textMuted} />
+      </Pressable>
       <View style={styles.toggle}>
         <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={onModeChange} />
       </View>
@@ -30,7 +41,7 @@ export function Header({ mode, onModeChange, onOpenSettings }: HeaderProps) {
         accessibilityLabel="Settings"
         hitSlop={12}
         onPress={onOpenSettings}
-        style={({ pressed }) => [styles.gear, pressed && styles.gearPressed]}
+        style={({ pressed }) => [styles.gear, pressed && styles.iconPressed]}
       >
         <Ionicons name="settings-outline" size={22} color={theme.textMuted} />
       </Pressable>
@@ -45,14 +56,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toggle: {
-    width: 200,
+    width: 280,
+  },
+  info: {
+    position: 'absolute',
+    left: 0,
+    padding: 4,
   },
   gear: {
     position: 'absolute',
     right: 0,
     padding: 4,
   },
-  gearPressed: {
+  iconPressed: {
     opacity: 0.6,
   },
 });

@@ -20,6 +20,8 @@ export interface Theme {
   segmentActive: string;
   /** Modal backdrop */
   backdrop: string;
+  /** Measurement / collapse flash (Quantum mode) */
+  collapse: string;
   isDark: boolean;
 }
 
@@ -34,6 +36,7 @@ export const themes: Record<ResolvedTheme, Theme> = {
     segmentTrack: '#1F2937',
     segmentActive: '#374151',
     backdrop: 'rgba(0, 0, 0, 0.55)',
+    collapse: '#F59E0B',
     isDark: true,
   },
   light: {
@@ -46,6 +49,7 @@ export const themes: Record<ResolvedTheme, Theme> = {
     segmentTrack: '#E5E7EB',
     segmentActive: '#FFFFFF',
     backdrop: 'rgba(17, 24, 39, 0.35)',
+    collapse: '#D97706',
     isDark: false,
   },
 };

@@ -6,6 +6,7 @@ import { Board } from '../components/Board';
 import { ControlDock } from '../components/ControlDock';
 import { Header } from '../components/Header';
 import { InstallBanner } from '../components/InstallBanner';
+import { RulesModal } from '../components/RulesModal';
 import { Scoreboard } from '../components/Scoreboard';
 import { SettingsModal } from '../components/SettingsModal';
 import { StatusText } from '../components/StatusText';
@@ -13,6 +14,7 @@ import { Opponent, useGameState } from '../hooks/useGameState';
 import { useTheme } from '../theme/ThemeContext';
 import { DEFAULT_CUSTOM_DEPTH, SPACING } from '../utils/constants';
 import { Difficulty, GameMode } from '../utils/engine';
+import { QuantumGame } from './QuantumGame';
 
 export function GameScreen() {
   const { theme } = useTheme();
@@ -23,6 +25,7 @@ export function GameScreen() {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [customDepth, setCustomDepth] = useState<number>(DEFAULT_CUSTOM_DEPTH);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false);
 
   const game = useGameState({ mode, opponent, difficulty, customDepth });
 
@@ -37,33 +40,44 @@ export function GameScreen() {
         },
       ]}
     >
-      <Header mode={mode} onModeChange={setMode} onOpenSettings={() => setSettingsVisible(true)} />
-
-      <View style={styles.statusArea}>
-        <StatusText snapshot={game.snapshot} />
-      </View>
-
-      <Board
-        board={game.snapshot.board}
-        vanishingIndex={game.vanishingIndex}
-        winner={game.snapshot.winner}
-        winLine={game.snapshot.winLine}
-        disabled={game.snapshot.winner !== null || game.isAiTurn}
-        onCellPress={game.place}
+      <Header
+        mode={mode}
+        onModeChange={setMode}
+        onOpenSettings={() => setSettingsVisible(true)}
+        onOpenInfo={() => setInfoVisible(true)}
       />
 
-      <ControlDock
-        canUndo={game.canUndo}
-        canRedo={game.canRedo}
-        onUndo={game.undo}
-        onRedo={game.redo}
-        onReset={game.reset}
-      />
+      {mode === 'quantum' ? (
+        <QuantumGame opponent={opponent} difficulty={difficulty} customDepth={customDepth} />
+      ) : (
+        <>
+          <View style={styles.statusArea}>
+            <StatusText snapshot={game.snapshot} />
+          </View>
 
-      <View style={styles.footerArea}>
-        <InstallBanner />
-        <Scoreboard scores={game.scores} />
-      </View>
+          <Board
+            board={game.snapshot.board}
+            vanishingIndex={game.vanishingIndex}
+            winner={game.snapshot.winner}
+            winLine={game.snapshot.winLine}
+            disabled={game.snapshot.winner !== null || game.isAiTurn}
+            onCellPress={game.place}
+          />
+
+          <ControlDock
+            canUndo={game.canUndo}
+            canRedo={game.canRedo}
+            onUndo={game.undo}
+            onRedo={game.redo}
+            onReset={game.reset}
+          />
+
+          <View style={styles.footerArea}>
+            <InstallBanner />
+            <Scoreboard scores={game.scores} />
+          </View>
+        </>
+      )}
 
       <SettingsModal
         visible={settingsVisible}
@@ -76,6 +90,8 @@ export function GameScreen() {
         onDifficultyChange={setDifficulty}
         onCustomDepthChange={setCustomDepth}
       />
+
+      <RulesModal visible={infoVisible} mode={mode} onClose={() => setInfoVisible(false)} />
     </View>
   );
 }

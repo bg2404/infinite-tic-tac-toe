@@ -8,7 +8,7 @@ import {
 
 export type Player = 'X' | 'O';
 export type Winner = Player | 'draw' | null;
-export type GameMode = 'classic' | 'infinite';
+export type GameMode = 'classic' | 'infinite' | 'quantum';
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
 export interface Mark {

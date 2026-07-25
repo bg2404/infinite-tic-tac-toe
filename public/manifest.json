@@ -1,7 +1,7 @@
 {
-  "name": "Infinite Tic-Tac-Toe",
-  "short_name": "Tic-Tac-Toe",
-  "description": "Tic-tac-toe with a vanishing twist: keep only three marks each, and the oldest disappears.",
+  "name": "Tic Tac Toe",
+  "short_name": "Tic Tac Toe",
+  "description": "Three ways to play tic-tac-toe: Classic, Infinite where your oldest mark vanishes, and Quantum with superposition and collapse.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

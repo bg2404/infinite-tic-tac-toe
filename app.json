@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Infinite Tic-Tac-Toe",
-    "slug": "infinite-tic-tac-toe",
+    "name": "Tic Tac Toe",
+    "slug": "tic-tac-toe",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
