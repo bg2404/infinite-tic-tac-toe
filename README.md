@@ -1,6 +1,6 @@
 # Tic Tac Toe
 
-An ad-free, minimalist Tic-Tac-Toe built with React Native (via Expo) and TypeScript, shipped as an installable web app. Three variants — Classic, Infinite (vanishing), and Quantum (superposition and collapse) — with full Undo/Redo history, Pass & Play, an in-app rules sheet per variant, and an AI opponent with four difficulty levels.
+An ad-free, minimalist Tic Tac Toe built with React Native (via Expo) and TypeScript, shipped as an installable web app. Three variants — Classic, Infinite (vanishing), and Quantum (superposition and collapse) — with full Undo/Redo history, Pass & Play, an in-app rules sheet per variant, and an AI opponent with four difficulty levels.
 
 ## Game modes
 
