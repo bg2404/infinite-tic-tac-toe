@@ -5,6 +5,7 @@ import Animated, {
   Easing,
   interpolateColor,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -25,12 +26,25 @@ interface QuantumBoardProps {
   previewAssignment: Record<number, ClassicalMark> | null;
   /** Spooky-mark ids in the closing cycle, flashed during measurement. */
   flashEdgeIds: number[];
+  /** Cells entangled with the focused cell — washed to show a measurement's reach. */
+  highlightCells: number[];
+  /** Spooky-mark ids inside the focused entanglement component. */
+  highlightEdgeIds: number[];
   disabled: boolean;
   onCellPress: (index: number) => void;
+  /** Pointer hover on web; null on leave. Touch input relies on press instead. */
+  onCellFocus: (index: number | null) => void;
 }
 
 const MAX_BOARD_SIZE = 340;
 const GAP = SPACING.cellGap;
+
+/**
+ * Where the breathing animations are parked when reduced motion is on: halfway
+ * through the cycle, so superposed marks and threads sit at their average
+ * brightness rather than at either extreme.
+ */
+const MID_CYCLE = 0.5;
 
 /** Top-left offset of a cell within the board (space-between layout). */
 const cellOrigin = (index: number, cellSize: number) => {
@@ -52,8 +66,11 @@ export function QuantumBoard({
   selected,
   previewAssignment,
   flashEdgeIds,
+  highlightCells,
+  highlightEdgeIds,
   disabled,
   onCellPress,
+  onCellFocus,
 }: QuantumBoardProps) {
   const { theme } = useTheme();
   const [available, setAvailable] = useState<{ width: number; height: number } | null>(null);
@@ -68,6 +85,8 @@ export function QuantumBoard({
     : 0;
   const cellSize = (boardSize - GAP * 2) / 3;
   const flashSet = new Set(flashEdgeIds);
+  const highlightEdgeSet = new Set(highlightEdgeIds);
+  const highlightCellSet = new Set(highlightCells);
 
   return (
     <View style={styles.fill} onLayout={onLayout}>
@@ -75,17 +94,22 @@ export function QuantumBoard({
         <View style={[styles.board, { width: boardSize, height: boardSize }]}>
           {/* Entanglement threads sit under the marks and ignore touches. */}
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            {snapshot.spooky.map((mark) => (
-              <Thread
-                key={mark.id}
-                mark={mark}
-                cellSize={cellSize}
-                color={
-                  flashSet.has(mark.id) ? theme.collapse : playerColor(theme, mark.player)
-                }
-                flashing={flashSet.has(mark.id)}
-              />
-            ))}
+            {snapshot.spooky.map((mark) => {
+              const flashing = flashSet.has(mark.id);
+              const highlighted = !flashing && highlightEdgeSet.has(mark.id);
+              return (
+                <Thread
+                  key={mark.id}
+                  mark={mark}
+                  cellSize={cellSize}
+                  color={
+                    flashing || highlighted ? theme.collapse : playerColor(theme, mark.player)
+                  }
+                  flashing={flashing}
+                  highlighted={highlighted}
+                />
+              );
+            })}
           </View>
 
           {Array.from({ length: 9 }, (_, index) => {
@@ -103,8 +127,10 @@ export function QuantumBoard({
                 preview={preview}
                 ghosts={ghosts}
                 selected={selected === index}
+                highlighted={highlightCellSet.has(index)}
                 disabled={disabled || classical !== null}
                 onPress={onCellPress}
+                onFocus={onCellFocus}
               />
             );
           })}
@@ -128,33 +154,47 @@ interface ThreadProps {
   cellSize: number;
   color: string;
   flashing: boolean;
+  highlighted: boolean;
 }
 
-function Thread({ mark, cellSize, color, flashing }: ThreadProps) {
+function Thread({ mark, cellSize, color, flashing, highlighted }: ThreadProps) {
   const a = cellCenter(mark.cells[0], cellSize);
   const b = cellCenter(mark.cells[1], cellSize);
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const length = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx);
-  const thickness = flashing ? 4 : 2.5;
+  const thickness = flashing ? 4 : highlighted ? 3.2 : 2.5;
 
-  // Superposition breathes; measurement pulses harder and brighter.
-  const t = useSharedValue(0);
+  // Superposition breathes; a highlight lifts it out of the background;
+  // measurement pulses harder and brighter still. Held at mid-cycle when the
+  // viewer has asked for reduced motion — the opacity levels still separate the
+  // three states, they just stop moving.
+  const reduceMotion = useReducedMotion();
+  const t = useSharedValue(reduceMotion ? MID_CYCLE : 0);
   useEffect(() => {
+    if (reduceMotion) {
+      cancelAnimation(t);
+      t.value = MID_CYCLE;
+      return;
+    }
     t.value = withRepeat(
       withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
       -1,
       true
     );
     return () => cancelAnimation(t);
-  }, [t]);
+  }, [t, reduceMotion]);
 
   const anim = useAnimatedStyle(
     () => ({
-      opacity: flashing ? 0.7 + t.value * 0.3 : 0.28 + t.value * 0.2,
+      opacity: flashing
+        ? 0.7 + t.value * 0.3
+        : highlighted
+          ? 0.5 + t.value * 0.22
+          : 0.28 + t.value * 0.2,
     }),
-    [flashing]
+    [flashing, highlighted]
   );
 
   return (
@@ -183,8 +223,10 @@ interface QuantumCellProps {
   preview: ClassicalMark | null;
   ghosts: SpookyMark[];
   selected: boolean;
+  highlighted: boolean;
   disabled: boolean;
   onPress: (index: number) => void;
+  onFocus: (index: number | null) => void;
 }
 
 function QuantumCell({
@@ -194,8 +236,10 @@ function QuantumCell({
   preview,
   ghosts,
   selected,
+  highlighted,
   disabled,
   onPress,
+  onFocus,
 }: QuantumCellProps) {
   const { theme } = useTheme();
   const ringRadius = size * 0.27;
@@ -209,10 +253,12 @@ function QuantumCell({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Cell ${index + 1}, ${label}`}
+      accessibilityLabel={`Cell ${index + 1}, ${label}${highlighted ? ', entangled' : ''}`}
       accessibilityState={{ selected }}
       disabled={disabled}
       onPress={() => onPress(index)}
+      onHoverIn={() => onFocus(index)}
+      onHoverOut={() => onFocus(null)}
       style={({ pressed }) => [
         styles.cell,
         {
@@ -225,6 +271,16 @@ function QuantumCell({
         },
       ]}
     >
+      {highlighted && (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            styles.wash,
+            { backgroundColor: theme.collapse },
+          ]}
+        />
+      )}
       {classical ? (
         <SolidMark mark={classical} size={size} snap />
       ) : preview ? (
@@ -261,15 +317,25 @@ interface GhostMarkProps {
 
 /** A superposed mark that continuously "breathes" — unitary evolution at rest. */
 function GhostMark({ mark, glyph, offsetX, offsetY, phase, color }: GhostMarkProps) {
-  const t = useSharedValue(0);
+  // Reduced motion parks every ghost at mid-cycle: still visibly faint and
+  // undersized against a collapsed mark, but static. This is the one animation
+  // in the app that would otherwise run forever, so it also stops being a
+  // constant battery draw.
+  const reduceMotion = useReducedMotion();
+  const t = useSharedValue(reduceMotion ? MID_CYCLE : 0);
   useEffect(() => {
+    if (reduceMotion) {
+      cancelAnimation(t);
+      t.value = MID_CYCLE;
+      return;
+    }
     // Stagger each ghost so a cell's marks breathe out of phase, not in unison.
     t.value = withDelay(
       phase * 240,
       withRepeat(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.sin) }), -1, true)
     );
     return () => cancelAnimation(t);
-  }, [t, phase]);
+  }, [t, phase, reduceMotion]);
 
   const style = useAnimatedStyle(() => ({
     opacity: 0.3 + t.value * 0.24,
@@ -306,15 +372,24 @@ function SolidMark({
   // Start values are set explicitly (not just at init) because this instance is
   // reused when a cell transitions from its collapse preview to the committed
   // mark — a plain re-init wouldn't replay the animation.
+  // Under reduced motion the scale punch is dropped but the amber flash stays:
+  // it is a colour change rather than movement, and it is the only cue that a
+  // measurement just happened, so it lingers a little longer to compensate.
+  const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const flash = useSharedValue(0);
   useEffect(() => {
     if (!snap) return;
-    scale.value = 1.35;
-    scale.value = withSpring(1, { damping: 9, stiffness: 340, mass: 0.6 });
+    if (!reduceMotion) {
+      scale.value = 1.35;
+      scale.value = withSpring(1, { damping: 9, stiffness: 340, mass: 0.6 });
+    }
     flash.value = 1;
-    flash.value = withTiming(0, { duration: 460, easing: Easing.out(Easing.quad) });
-  }, [snap, scale, flash]);
+    flash.value = withTiming(0, {
+      duration: reduceMotion ? 700 : 460,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [snap, scale, flash, reduceMotion]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -349,6 +424,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.cell,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  wash: {
+    borderRadius: RADIUS.cell,
+    opacity: 0.1,
   },
   ghost: {
     position: 'absolute',

@@ -11,6 +11,7 @@ import {
   availableCells,
   ClassicalMark,
   createInitialQuantumSnapshot,
+  entanglementHighlight,
   forcedCell,
   placeForced,
   placeSpooky,
@@ -398,6 +399,40 @@ console.log('\nUndo/redo actor-run navigation (vs AI)');
     'redo after that restores measure, place, and AI reply',
     redoActorRun(humanDouble, 2, 'O') === 5
   );
+}
+
+// ---------------------------------------------------------------------------
+console.log('\nEntanglement highlight');
+// ---------------------------------------------------------------------------
+{
+  const sorted = (nums: number[]) => [...nums].sort((a, b) => a - b).join(',');
+
+  const empty = createInitialQuantumSnapshot();
+  expect('an untouched cell highlights nothing', entanglementHighlight(empty, 4).cells.length === 0);
+
+  let s = placeSpooky(empty, 0, 1); // X1 {0,1}
+  s = placeSpooky(s, 1, 4); // O2 {1,4}
+  s = placeSpooky(s, 6, 7); // X3 {6,7} — a separate component
+
+  const chain = entanglementHighlight(s, 0);
+  expect('the whole chain lights up from any of its cells', sorted(chain.cells) === '0,1,4');
+  expect('every mark in the component is included', sorted(chain.edgeIds) === '1,2');
+  expect(
+    'the far end of the chain agrees',
+    sorted(entanglementHighlight(s, 4).cells) === sorted(chain.cells)
+  );
+
+  const other = entanglementHighlight(s, 6);
+  expect('a separate component stays separate', sorted(other.cells) === '6,7');
+  expect('and carries only its own mark', sorted(other.edgeIds) === '3');
+
+  expect('a bare cell in a live game still highlights nothing', entanglementHighlight(s, 8).cells.length === 0);
+
+  // Collapse the chain, then check the resulting classical cells go quiet.
+  let cyc = placeSpooky(createInitialQuantumSnapshot(), 0, 1);
+  cyc = placeSpooky(cyc, 0, 1);
+  const done = resolveCollapse(cyc, 0);
+  expect('a collapsed cell highlights nothing', entanglementHighlight(done, 0).cells.length === 0);
 }
 
 console.log(failures === 0 ? '\nAll tests passed.' : `\n${failures} test(s) FAILED.`);

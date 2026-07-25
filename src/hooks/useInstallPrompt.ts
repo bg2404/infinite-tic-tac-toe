@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { STORAGE_KEYS } from '../utils/storage';
+
 /**
  * Chrome fires this so a site can offer its own install affordance. It isn't
  * in TypeScript's DOM lib because it isn't a standard.
@@ -18,7 +20,7 @@ export type InstallState =
   /** iOS Safari has no install API, so the user has to be told the steps. */
   | { kind: 'instructions' };
 
-const DISMISS_KEY = 'infinite:install-dismissed';
+const DISMISS_KEY = STORAGE_KEYS.installDismissed;
 
 const isWeb = Platform.OS === 'web';
 

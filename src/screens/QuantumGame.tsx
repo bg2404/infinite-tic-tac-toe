@@ -51,8 +51,11 @@ export function QuantumGame({ opponent, difficulty, customDepth }: QuantumGamePr
         selected={game.selected}
         previewAssignment={previewAssignment}
         flashEdgeIds={flashEdgeIds}
+        highlightCells={game.highlight.cells}
+        highlightEdgeIds={game.highlight.edgeIds}
         disabled={choosing || snapshot.phase === 'gameover' || isAiTurn}
         onCellPress={game.tapCell}
+        onCellFocus={game.focusCell}
       />
 
       {choosing && snapshot.pending ? (
@@ -102,7 +105,7 @@ export function QuantumGame({ opponent, difficulty, customDepth }: QuantumGamePr
       )}
 
       <View style={styles.footerArea}>
-        <Scoreboard scores={game.scores} />
+        <Scoreboard scores={game.scores} onClear={game.clearScores} />
       </View>
     </>
   );
