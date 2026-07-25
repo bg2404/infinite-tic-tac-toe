@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AI_MOVE_DELAY_MS } from '../utils/constants';
 import { Difficulty, Player } from '../utils/engine';
 import {
   createInitialQuantumSnapshot,
+  entanglementHighlight,
+  EntanglementHighlight,
   forcedCell,
   placeForced,
   placeSpooky,
   QuantumSnapshot,
   resolveCollapse,
 } from '../utils/quantum';
+import { Opponent, Scores } from '../utils/persistence';
 import { getQuantumMoveAsync } from '../utils/quantumAiAsync';
 import { QuantumAiMove } from '../utils/quantumAi';
 import { redoActorRun, undoActorRun } from '../utils/timelineNav';
-import { AI_PLAYER, Opponent } from './useGameState';
+import { AI_PLAYER } from './useGameState';
+import { usePersistentScores } from './usePersistentScores';
 
-export interface Scores {
-  X: number;
-  O: number;
-  draws: number;
-}
+export type { Scores };
 
 export interface QuantumSettings {
   opponent: Opponent;
@@ -40,6 +40,8 @@ const freshTimeline = (): Timeline => ({
   actors: [null],
   pointer: 0,
 });
+
+const NO_HIGHLIGHT: EntanglementHighlight = { cells: [], edgeIds: [] };
 
 /** Whoever must decide now: the chooser mid-measurement, else the mover. */
 const decisionMaker = (snapshot: QuantumSnapshot): Player =>
@@ -67,8 +69,9 @@ const applyAiMove = (snapshot: QuantumSnapshot, move: QuantumAiMove): QuantumSna
  */
 export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSettings) {
   const [timeline, setTimeline] = useState<Timeline>(freshTimeline);
-  const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 });
+  const { scores, recordResult, clearScores } = usePersistentScores('quantum');
   const [selected, setSelected] = useState<number | null>(null);
+  const [focused, setFocused] = useState<number | null>(null);
 
   const { history, actors, pointer } = timeline;
   const snapshot = history[pointer];
@@ -76,20 +79,17 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
   const isAiTurn =
     opponent === 'ai' && snapshot.phase !== 'gameover' && decisionMaker(snapshot) === AI_PLAYER;
 
-  const pushSnapshot = useCallback((next: QuantumSnapshot, actor: Player) => {
-    setTimeline((prev) => ({
-      history: [...prev.history.slice(0, prev.pointer + 1), next],
-      actors: [...prev.actors.slice(0, prev.pointer + 1), actor],
-      pointer: prev.pointer + 1,
-    }));
-    if (next.winner) {
-      setScores((prev) =>
-        next.winner === 'draw'
-          ? { ...prev, draws: prev.draws + 1 }
-          : { ...prev, [next.winner as Player]: prev[next.winner as Player] + 1 }
-      );
-    }
-  }, []);
+  const pushSnapshot = useCallback(
+    (next: QuantumSnapshot, actor: Player) => {
+      setTimeline((prev) => ({
+        history: [...prev.history.slice(0, prev.pointer + 1), next],
+        actors: [...prev.actors.slice(0, prev.pointer + 1), actor],
+        pointer: prev.pointer + 1,
+      }));
+      recordResult(next.winner);
+    },
+    [recordResult]
+  );
 
   /**
    * Taps a cell during the placing phase. The first tap selects one cell; the
@@ -101,6 +101,8 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
     (cell: number) => {
       if (isAiTurn || snapshot.phase !== 'placing') return;
 
+      // Touch has no hover, so a tap doubles as the entanglement probe.
+      setFocused(cell);
       const actor = decisionMaker(snapshot);
       const forced = forcedCell(snapshot);
       if (forced !== null) {
@@ -136,6 +138,28 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
     [isAiTurn, snapshot, pushSnapshot]
   );
 
+  /** Points the entanglement highlight at a cell; null clears it. */
+  const focusCell = useCallback((cell: number | null) => setFocused(cell), []);
+
+  /**
+   * Everything a measurement at the focused cell would drag in. Suppressed
+   * mid-measurement, where the collapse flash already owns the board.
+   *
+   * Hovering wins when it is available, but it falls back to the half-placed
+   * selection so the highlight is reachable on touch at all: `onHoverIn` needs
+   * a mouse, and this ships mainly as a phone PWA. Tapping the first cell of a
+   * pair now previews what a measurement there would drag along — which is
+   * exactly the moment the answer matters.
+   */
+  const highlightTarget = focused ?? selected;
+  const highlight = useMemo(
+    () =>
+      highlightTarget === null || snapshot.phase !== 'placing'
+        ? NO_HIGHLIGHT
+        : entanglementHighlight(snapshot, highlightTarget),
+    [highlightTarget, snapshot]
+  );
+
   const undo = useCallback(() => {
     setSelected(null);
     setTimeline((prev) => ({
@@ -160,12 +184,15 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
 
   const reset = useCallback(() => {
     setSelected(null);
+    setFocused(null);
     setTimeline(freshTimeline());
   }, []);
 
-  // A pointer move that lands off a placing phase invalidates any selection.
+  // A pointer move that lands off a placing phase invalidates any selection,
+  // and the board underneath the highlight is no longer the one it described.
   useEffect(() => {
     setSelected(null);
+    setFocused(null);
   }, [pointer]);
 
   // Switching opponent invalidates the timeline.
@@ -195,12 +222,15 @@ export function useQuantumGame({ opponent, difficulty, customDepth }: QuantumSet
   return {
     snapshot,
     scores,
+    clearScores,
     selected,
+    highlight,
     isAiTurn,
     canUndo: pointer > 0,
     canRedo: pointer < history.length - 1,
     forcedCell: forcedCell(snapshot),
     tapCell,
+    focusCell,
     chooseCollapse,
     undo,
     redo,

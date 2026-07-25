@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,26 +6,52 @@ import { Board } from '../components/Board';
 import { ControlDock } from '../components/ControlDock';
 import { Header } from '../components/Header';
 import { InstallBanner } from '../components/InstallBanner';
+import { QuantumWalkthrough } from '../components/QuantumWalkthrough';
 import { RulesModal } from '../components/RulesModal';
 import { Scoreboard } from '../components/Scoreboard';
 import { SettingsModal } from '../components/SettingsModal';
 import { StatusText } from '../components/StatusText';
 import { Opponent, useGameState } from '../hooks/useGameState';
 import { useTheme } from '../theme/ThemeContext';
-import { DEFAULT_CUSTOM_DEPTH, SPACING } from '../utils/constants';
+import { SPACING } from '../utils/constants';
 import { Difficulty, GameMode } from '../utils/engine';
+import { loadSettings, saveSettings } from '../utils/persistence';
+import { readFlag, STORAGE_KEYS, writeFlag } from '../utils/storage';
 import { QuantumGame } from './QuantumGame';
 
 export function GameScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState<GameMode>('classic');
-  const [opponent, setOpponent] = useState<Opponent>('human');
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-  const [customDepth, setCustomDepth] = useState<number>(DEFAULT_CUSTOM_DEPTH);
+  const [settings, setSettings] = useState(loadSettings);
+  const { mode, opponent, difficulty, customDepth } = settings;
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [infoVisible, setInfoVisible] = useState(false);
+  const [walkthroughVisible, setWalkthroughVisible] = useState(false);
+
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings]);
+
+  // Quantum is the one mode nobody already knows the rules to, so it gets an
+  // introduction on first arrival — once ever, then the header info button.
+  useEffect(() => {
+    if (mode !== 'quantum') return;
+    if (readFlag(STORAGE_KEYS.quantumWalkthroughSeen)) return;
+    setWalkthroughVisible(true);
+  }, [mode]);
+
+  const dismissWalkthrough = () => {
+    writeFlag(STORAGE_KEYS.quantumWalkthroughSeen, true);
+    setWalkthroughVisible(false);
+  };
+
+  const setMode = (next: GameMode) => setSettings((prev) => ({ ...prev, mode: next }));
+  const setOpponent = (next: Opponent) => setSettings((prev) => ({ ...prev, opponent: next }));
+  const setDifficulty = (next: Difficulty) =>
+    setSettings((prev) => ({ ...prev, difficulty: next }));
+  const setCustomDepth = (next: number) =>
+    setSettings((prev) => ({ ...prev, customDepth: next }));
 
   const game = useGameState({ mode, opponent, difficulty, customDepth });
 
@@ -74,7 +100,7 @@ export function GameScreen() {
 
           <View style={styles.footerArea}>
             <InstallBanner />
-            <Scoreboard scores={game.scores} />
+            <Scoreboard scores={game.scores} onClear={game.clearScores} />
           </View>
         </>
       )}
@@ -92,6 +118,8 @@ export function GameScreen() {
       />
 
       <RulesModal visible={infoVisible} mode={mode} onClose={() => setInfoVisible(false)} />
+
+      <QuantumWalkthrough visible={walkthroughVisible} onDismiss={dismissWalkthrough} />
     </View>
   );
 }

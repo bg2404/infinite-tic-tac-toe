@@ -13,8 +13,10 @@ import {
   Player,
   Snapshot,
 } from '../utils/engine';
+import { Opponent, Scores } from '../utils/persistence';
+import { usePersistentScores } from './usePersistentScores';
 
-export type Opponent = 'human' | 'ai';
+export type { Opponent, Scores };
 
 export interface GameSettings {
   mode: GameMode;
@@ -22,12 +24,6 @@ export interface GameSettings {
   difficulty: Difficulty;
   /** Search depth used when difficulty is 'custom'. */
   customDepth: number;
-}
-
-export interface Scores {
-  X: number;
-  O: number;
-  draws: number;
 }
 
 interface Timeline {
@@ -47,7 +43,7 @@ const freshTimeline = (): Timeline => ({ history: [createInitialSnapshot()], poi
  */
 export function useGameState({ mode, opponent, difficulty, customDepth }: GameSettings) {
   const [timeline, setTimeline] = useState<Timeline>(freshTimeline);
-  const [scores, setScores] = useState<Scores>({ X: 0, O: 0, draws: 0 });
+  const { scores, recordResult, clearScores } = usePersistentScores('board');
 
   const { history, pointer } = timeline;
   const snapshot = history[pointer];
@@ -60,15 +56,9 @@ export function useGameState({ mode, opponent, difficulty, customDepth }: GameSe
       if (next === snapshot) return;
 
       setTimeline({ history: [...history.slice(0, pointer + 1), next], pointer: pointer + 1 });
-
-      const winner = next.winner;
-      if (winner) {
-        setScores((prev) =>
-          winner === 'draw' ? { ...prev, draws: prev.draws + 1 } : { ...prev, [winner]: prev[winner] + 1 }
-        );
-      }
+      recordResult(next.winner);
     },
-    [snapshot, history, pointer, mode]
+    [snapshot, history, pointer, mode, recordResult]
   );
 
   /** Human tap handler; ignores taps while the AI owns the turn. */
@@ -123,6 +113,7 @@ export function useGameState({ mode, opponent, difficulty, customDepth }: GameSe
   return {
     snapshot,
     scores,
+    clearScores,
     vanishingIndex,
     isAiTurn,
     canUndo: pointer > 0,

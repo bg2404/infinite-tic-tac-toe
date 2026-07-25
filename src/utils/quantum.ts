@@ -139,6 +139,37 @@ function alreadyConnected(a: number, b: number, adj: Adjacency): boolean {
   return componentOf(a, adj).includes(b);
 }
 
+/** Everything entangled with `cell`: its whole component, plus the marks in it. */
+export interface EntanglementHighlight {
+  cells: number[];
+  edgeIds: number[];
+}
+
+const EMPTY_HIGHLIGHT: EntanglementHighlight = { cells: [], edgeIds: [] };
+
+/**
+ * The connected component a cell belongs to, for showing a player everything a
+ * measurement there would drag along with it. Collapsed cells and cells with
+ * no spooky marks highlight nothing.
+ */
+export function entanglementHighlight(
+  snapshot: QuantumSnapshot,
+  cell: number
+): EntanglementHighlight {
+  if (snapshot.collapsed[cell] !== null) return EMPTY_HIGHLIGHT;
+
+  const adj = buildAdjacency(snapshot.spooky);
+  if (!adj[cell]) return EMPTY_HIGHLIGHT;
+
+  const cells = componentOf(cell, adj);
+  const members = new Set(cells);
+  const edgeIds = snapshot.spooky
+    .filter((mark) => members.has(mark.cells[0]) || members.has(mark.cells[1]))
+    .map((mark) => mark.id);
+
+  return { cells, edgeIds };
+}
+
 /**
  * The unique tree path between `a` and `b` in a forest, as ordered nodes plus
  * the edge ids linking consecutive nodes. `edges[i]` connects `nodes[i]` and
