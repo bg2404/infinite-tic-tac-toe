@@ -41,6 +41,3 @@ yarn-error.*
 /ios
 /android
 .vercel
-
-# Plethora Bit bundle: the exact bytes uploaded as the draft, kept versioned
-!plethora/dist/
