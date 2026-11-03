@@ -2222,7 +2222,12 @@ window.plethoraBit = {
         }
       }
 
-      ctx.platform.interact({ type: move.kind, by: actor, move: next.moveNumber });
+      ctx.platform.interact(
+        Object.assign(
+          { type: move.kind, by: actor, move: next.moveNumber },
+          move.kind === 'place' ? { a: move.a, b: move.b } : move.kind === 'collapse' ? { option: move.option } : { cell: move.cell }
+        )
+      );
 
       // Once both sides have moved the game counts: remember it is live so an
       // abandoned game (closing the Bit) still ends the streak next visit.
