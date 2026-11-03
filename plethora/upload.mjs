@@ -131,7 +131,7 @@ function redact(value) {
   if (value && typeof value === 'object') {
     const out = {};
     for (const [k, v] of Object.entries(value)) {
-      if (k === 'source') out[k] = `<${String(v).length} chars>`;
+      if (k === 'source' || k === 'source_draft' || k === 'source_published') out[k] = `<${String(v).length} chars>`;
       else if (k === 'accessToken' || k === 'sessionSecret') out[k] = '<redacted>';
       else out[k] = redact(v);
     }
