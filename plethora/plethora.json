@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "runtime": "plethora-bit@2",
+  "entry": "main.js",
+  "title": "Quantum Tic Tac Toe",
+  "description": "Tic-tac-toe with superposition. Every mark lives in two cells at once until a loop of entanglement closes and the board collapses. Outwit the computer on three difficulties and build a win streak.",
+  "tags": [
+    "quantum",
+    "tic-tac-toe",
+    "strategy",
+    "puzzle",
+    "board-game",
+    "vs-computer"
+  ],
+  "permissions": [
+    "haptics",
+    "backgroundMusic"
+  ],
+  "dependencies": [],
+  "display": "fullscreen",
+  "onboarding": {
+    "kind": "immersive",
+    "version": 1
+  },
+  "memory": {
+    "local": {
+      "profile": {
+        "label": "Settings and streaks"
+      }
+    },
+    "records": {
+      "streak": {
+        "label": "Win streak",
+        "valueType": "streak",
+        "order": "desc",
+        "format": "integer",
+        "periods": [
+          "weekly",
+          "all_time"
+        ],
+        "scopes": [
+          "global",
+          "following"
+        ],
+        "dedupe": "best_per_user",
+        "dimensions": {
+          "difficulty": [
+            "easy",
+            "medium",
+            "hard"
+          ]
+        }
+      }
+    }
+  },
+  "tuning": {
+    "schemaVersion": 1,
+    "groups": {
+      "play": {
+        "label": "Play"
+      },
+      "feel": {
+        "label": "Feel"
+      },
+      "audio": {
+        "label": "Audio"
+      }
+    },
+    "knobs": {
+      "default_difficulty": {
+        "label": "Default difficulty",
+        "type": "choice",
+        "default": "medium",
+        "options": [
+          "easy",
+          "medium",
+          "hard"
+        ],
+        "group": "play",
+        "intent": "difficulty",
+        "apply": "restart"
+      },
+      "hard_think_ms": {
+        "label": "Hard: computer think time (ms)",
+        "type": "integer",
+        "default": 350,
+        "min": 100,
+        "max": 1200,
+        "step": 50,
+        "group": "play",
+        "intent": "difficulty",
+        "apply": "live"
+      },
+      "computer_pause_ms": {
+        "label": "Pause before the computer replies",
+        "type": "duration_ms",
+        "default": 520,
+        "min": 0,
+        "max": 1500,
+        "step": 20,
+        "group": "feel",
+        "intent": "feel",
+        "apply": "live"
+      },
+      "thread_glow": {
+        "label": "Entanglement thread glow",
+        "type": "percent",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "group": "feel",
+        "intent": "visual",
+        "apply": "live"
+      },
+      "music_volume": {
+        "label": "Music volume",
+        "type": "percent",
+        "default": 0.35,
+        "min": 0,
+        "max": 0.9,
+        "step": 0.05,
+        "group": "audio",
+        "intent": "audio",
+        "apply": "live"
+      }
+    }
+  }
+}

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plethora Bit harness</title>
+<style>
+  :root { color-scheme: dark; --bg: #121317; --panel: #1b1d23; --line: #2b2e38; --ink: #e7e8ec; --muted: #9aa0ad; --accent: #8b74ff; --warn: #f2b84b; --bad: #ff6b78; }
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { background: #2a2d37; border: 1px solid #3a3e4b; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+  button:hover { background: #333744; }
+  input[type="number"], input[type="text"], select, textarea { background: #121318; border: 1px solid #3a3e4b; border-radius: 6px; padding: 4px 6px; min-width: 0; }
+  code { font: 12px ui-monospace, Menlo, monospace; }
+
+  /* stage + phone */
+  #hx-stage { flex: 1 1 auto; min-width: 0; height: 100vh; position: relative; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #hx-stage.hx-stage-fill { padding: 0; overflow: hidden; align-items: flex-start; justify-content: flex-start; }
+  #hx-sizer { position: relative; flex: none; }
+  #hx-phone { position: absolute; left: 0; top: 0; transform-origin: 0 0; padding: 12px; background: #0a0a0c; border-radius: 67px; box-shadow: 0 0 0 1.5px #3b3d46, 0 24px 70px rgba(0, 0, 0, 0.6); }
+  #hx-phone.hx-chrome-android { border-radius: 38px; padding: 10px; }
+  #hx-phone.hx-chrome-homebutton { border-radius: 54px; padding: 78px 18px; }
+  #hx-phone.hx-fill { padding: 0; border-radius: 0; box-shadow: none; background: none; }
+  #hx-screen { position: relative; overflow: hidden; background: #000; isolation: isolate; }
+  #hx-device-frame { position: absolute; left: 0; border: 0; display: block; background: #000; z-index: 0; }
+  #hx-decor { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+  .hx-hostbar { position: absolute; left: 0; right: 0; background: #000; display: none; }
+  .hx-island { display: none; position: absolute; top: 11px; left: 50%; width: 126px; height: 37px; margin-left: -63px; background: #000; border-radius: 20px; }
+  .hx-chrome-island .hx-island { display: block; }
+  .hx-punch { display: none; position: absolute; top: 11px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #000; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.07); }
+  .hx-chrome-android .hx-punch { display: block; }
+  .hx-home { display: none; position: absolute; bottom: 8px; left: 50%; width: 139px; height: 5px; margin-left: -69.5px; border-radius: 3px; background: rgba(255, 255, 255, 0.88); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28); }
+  .hx-chrome-island .hx-home { display: block; }
+  .hx-navbar { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 48px; align-items: center; justify-content: space-around; padding: 0 64px; background: rgba(0, 0, 0, 0.32); color: rgba(255, 255, 255, 0.85); font-size: 17px; }
+  .hx-chrome-android .hx-navbar { display: flex; }
+  .hx-sebutton, .hx-sespeaker { display: none; }
+  .hx-chrome-homebutton .hx-sebutton { display: block; position: absolute; left: 50%; bottom: 16px; width: 46px; height: 46px; margin-left: -23px; border-radius: 50%; box-shadow: inset 0 0 0 2px #2d2e35; }
+  .hx-chrome-homebutton .hx-sespeaker { display: block; position: absolute; left: 50%; top: 36px; width: 62px; height: 6px; margin-left: -31px; border-radius: 3px; background: #2d2e35; }
+  #hx-logo { position: absolute; pointer-events: auto; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(22, 22, 28, 0.58); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; font: 700 22px/1 system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); padding: 0; z-index: 4; }
+  #hx-loader { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 8, 10, 0.72); color: #cfd2da; font: 600 13px system-ui, sans-serif; transition: opacity 0.2s; z-index: 1; }
+  #hx-loader.hx-hidden { opacity: 0; }
+  .hx-guide { position: absolute; border: 1.5px dashed; }
+  .hx-guide span { position: absolute; left: 4px; top: 2px; font: 600 10px system-ui, sans-serif; background: rgba(0, 0, 0, 0.62); color: #fff; padding: 1px 4px; border-radius: 3px; }
+  .hx-guide-safe { border-color: rgba(255, 86, 86, 0.95); }
+  .hx-guide-content { border-color: rgba(60, 220, 120, 0.95); }
+  .hx-guide-content span { top: auto; bottom: 2px; }
+  .hx-guide-logo { border: 2px solid rgba(255, 210, 0, 0.95); border-radius: 50%; }
+  #hx-focus { position: absolute; border: 2px solid #ffd400; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35); }
+  #hx-onboarding { position: absolute; left: 16px; right: 16px; pointer-events: auto; color: #fff; z-index: 3; }
+  .hx-ob-pill { background: rgba(20, 20, 26, 0.88); border-radius: 999px; padding: 9px 9px 9px 16px; display: flex; align-items: center; gap: 10px; font: 600 14px system-ui, sans-serif; }
+  .hx-ob-pill > div:first-child { flex: 1; }
+  .hx-ob-card { background: rgba(20, 20, 26, 0.95); border-radius: 16px; padding: 14px; font: 14px/1.4 system-ui, sans-serif; display: grid; gap: 8px; }
+  .hx-ob-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  #hx-haptic-badge { position: absolute; top: 72px; left: 50%; transform: translateX(-50%); background: rgba(139, 116, 255, 0.95); color: #fff; font: 600 11px system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; opacity: 0; white-space: nowrap; z-index: 4; }
+  #hx-error { position: absolute; left: 16px; right: 16px; bottom: 16px; max-height: 45%; overflow: auto; background: #2a1215; border: 1px solid #7a2a32; color: #ffd7db; border-radius: 10px; padding: 10px 12px; z-index: 5; }
+  .hx-error-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #hx-error pre { white-space: pre-wrap; font: 11.5px/1.4 ui-monospace, Menlo, monospace; margin: 8px 0 0; }
+
+  /* panel */
+  #hx-panel { width: 372px; flex: none; height: 100vh; display: none; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); }
+  body.hx-panel-open #hx-panel { display: flex; }
+  #hx-panel-scroll { flex: 1 1 auto; overflow: auto; padding: 12px 14px 8px; min-height: 0; }
+  .hx-head { padding-right: 40px; }
+  .hx-kicker { color: var(--muted); font-size: 11px; letter-spacing: 0.02em; }
+  #hx-title { font-size: 16px; margin: 2px 0 4px; }
+  .hx-muted { color: var(--muted); }
+  .hx-warn { color: var(--warn); margin-top: 6px; }
+  .hx-status { margin-top: 8px; padding: 6px 8px; background: #121318; border: 1px solid var(--line); border-radius: 7px; font: 11.5px/1.4 ui-monospace, Menlo, monospace; color: #c9ccd6; }
+  .hx-status.hx-has-errors { border-color: #7a2a32; color: #ffc6cc; }
+  #hx-panel section { border-top: 1px solid var(--line); padding: 10px 0; }
+  #hx-panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; }
+  .hx-field { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .hx-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 6px; }
+  .hx-tune { display: grid; grid-template-columns: 130px 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .hx-tune-label { color: #cfd2da; font-size: 12px; }
+  .hx-tune-ctl { display: flex; gap: 6px; align-items: center; min-width: 0; }
+  .hx-tune-ctl input[type="range"] { flex: 1; min-width: 60px; }
+  .hx-tune-ctl input[type="number"] { width: 76px; }
+  .hx-tune-ctl.hx-wrap { flex-wrap: wrap; }
+  .hx-tune-group { color: var(--muted); font-size: 11px; margin: 8px 0 4px; }
+  .hx-tune-curve textarea { width: 100%; font: 11px ui-monospace, Menlo, monospace; }
+  textarea.hx-bad { border-color: var(--bad); }
+  .hx-logbox { flex: 0 0 40vh; display: flex; flex-direction: column; border-top: 1px solid var(--line); min-height: 0; }
+  .hx-loghead { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; }
+  .hx-loghead h2 { margin: 0 !important; }
+  #harness-log { flex: 1 1 auto; overflow: auto; background: #0f1014; padding: 6px 10px 10px; font: 11px/1.38 ui-monospace, Menlo, monospace; min-height: 0; }
+  .hx-entry { padding: 1px 0; border-bottom: 1px solid #191b21; word-break: break-word; }
+  .hx-entry-t { color: #6b7180; margin-right: 6px; }
+  .hx-entry-k { display: inline-block; min-width: 64px; margin-right: 6px; color: #8f96a6; }
+  .hx-entry-d { display: block; color: #8e95a5; margin-left: 12px; white-space: pre-wrap; }
+  .hx-entry-n { color: var(--warn); margin-left: 6px; }
+  .hx-entry[data-kind="platform"] .hx-entry-k { color: #7cc4ff; }
+  .hx-entry[data-kind="music"] .hx-entry-k { color: #c49bff; }
+  .hx-entry[data-kind="memory"] .hx-entry-k, .hx-entry[data-kind="score"] .hx-entry-k { color: #6fe0b0; }
+  .hx-entry[data-kind="fx"] .hx-entry-k { color: #ffcf70; }
+  .hx-entry[data-kind="lifecycle"] .hx-entry-k { color: #9ad0ff; }
+  .hx-entry[data-kind="tune"] .hx-entry-k, .hx-entry[data-kind="onboarding"] .hx-entry-k { color: #ff9fd6; }
+  .hx-entry[data-kind="warn"] { color: var(--warn); }
+  .hx-entry[data-kind="error"] { color: var(--bad); }
+  #hx-gear { position: fixed; top: 10px; right: 10px; z-index: 20; width: 34px; height: 34px; padding: 0; border-radius: 9px; font-size: 17px; line-height: 1; }
+  @media (max-width: 979px) {
+    #hx-panel { position: fixed; right: 0; top: 0; bottom: 0; z-index: 15; width: min(372px, 92vw); box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5); }
+  }
+</style>
+</head>
+<body>
+<main id="hx-stage" aria-label="Device stage"></main>
+
+<aside id="hx-panel" aria-label="Harness controls">
+  <div id="hx-panel-scroll">
+    <header class="hx-head">
+      <div class="hx-kicker">Plethora Bit harness · SDK 1.7.0 · plethora-bit@2 (emulated)</div>
+      <h1 id="hx-title">Loading…</h1>
+      <div class="hx-muted">Bit: <code id="hx-bit-path">–</code></div>
+      <div id="hx-manifest-note" class="hx-warn" hidden></div>
+      <div id="hx-status" class="hx-status">starting…</div>
+    </header>
+    <section>
+      <h2>Device</h2>
+      <label class="hx-field"><span>Preset</span><select id="hx-device"></select></label>
+      <label class="hx-field"><span>DPR override</span><input id="hx-dpr" type="number" min="0.5" max="4" step="0.5"></label>
+      <div class="hx-row">
+        <label><input id="hx-fit" type="checkbox"> Fit to window</label>
+        <label><input id="hx-safe" type="checkbox"> Show safe areas</label>
+      </div>
+      <button id="hx-narrow" type="button">Simulate resize (−20% width)</button>
+    </section>
+    <section>
+      <h2>Lifecycle</h2>
+      <div class="hx-row">
+        <button id="hx-destroy" type="button">Destroy</button>
+        <button id="hx-reinit" type="button">Re-init</button>
+        <button id="hx-pause" type="button">Pause</button>
+        <button id="hx-resume" type="button">Resume</button>
+        <button id="hx-reload" type="button" title="Fresh device document: re-evaluates the Bit script">Reload Bit</button>
+      </div>
+    </section>
+    <section>
+      <h2>Memory and leaderboard</h2>
+      <label class="hx-field"><span>Latency (ms)</span><input id="hx-latency" type="number" min="0" step="50"></label>
+      <div class="hx-row"><label><input id="hx-fail-records" type="checkbox"> Fail record calls (network_error)</label></div>
+      <div class="hx-row"><label><input id="hx-fail-local" type="checkbox"> Fail local memory and progress</label></div>
+      <button id="hx-clear-storage" type="button">Clear harness storage</button>
+    </section>
+    <section>
+      <h2>Audio</h2>
+      <label><input id="hx-mute" type="checkbox"> Mute music and sounds</label>
+    </section>
+    <section>
+      <h2>Tuning (manifest.tuning)</h2>
+      <div id="hx-tuning"></div>
+    </section>
+  </div>
+  <section class="hx-logbox">
+    <div class="hx-loghead"><h2>Event log</h2><button id="hx-log-clear" type="button">Clear</button></div>
+    <div id="harness-log" role="log" aria-live="off" aria-label="Harness event log"></div>
+  </section>
+</aside>
+<button id="hx-gear" type="button" aria-label="Toggle harness panel" aria-expanded="false">⚙</button>
+
+<script>document.write('<script src="mock-plethora.js?v=' + Date.now() + '"><\/script>');</script>
+<script>
+  // Boot: manifest → Bit script (classic, inside the device frame) → mock ctx → await window.plethoraBit.init(ctx).
+  (async () => {
+    const harness = window.PlethoraHarnessShell;
+    const params = new URLSearchParams(location.search);
+    window.__harness = harness;
+    try {
+      await harness.start();
+      await harness.fetchManifest("../plethora.json");
+      const bitUrl = harness.resolveBitPath(params.get("bit") || "dist/main.js");
+      await harness.loadBit(bitUrl);
+      await harness.init();
+    } catch (err) {
+      console.error("[harness] boot stopped:", err);
+    }
+  })();
+</script>
+</body>
+</html>

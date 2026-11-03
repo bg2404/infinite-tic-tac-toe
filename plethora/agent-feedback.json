@@ -1,0 +1,35 @@
+{
+  "contextVersion": "plethora-agent-context-2026-10-22.1",
+  "sdkVersion": "1.7.0",
+  "outcome": "minor_friction",
+  "confidence": "medium",
+  "unclear": [
+    "Whether a font pin such as space-grotesk@1.0.0 must be declared in manifest.dependencies before ctx.loadFont accepts it. sdk.md lists 'missing declaration' among loadFont rejections, but schema.json describes dependencies as library pins and libraries.json keeps fontPins separate. The Bit calls loadFont without a declaration and falls back to system fonts on rejection.",
+    "The fields a manifest.memory.local channel declaration accepts; only label was guessed from the shared limits.",
+    "Whether ctx.listen on an ordinary child element auto-enables its hit testing. A hidden full-screen backdrop wired with activate() swallowed every board tap; the Bit now sets pointer-events inline when opening and closing it.",
+    "Whether ctx.input.on(target, gesture, handler, options) accepts tracker thresholds such as tapMaxMs and holdMs; the Bit passes them to accept slower deliberate taps."
+  ],
+  "blockers": [],
+  "repeatedFixes": [
+    "Touch-trap from an invisible modal backdrop (activate, then listen) took two passes before taps reached the canvas reliably."
+  ],
+  "workarounds": [
+    "The computer's reply pause uses Date.now() deadlines instead of accumulated game.loop dt, because a throttled WebView (1 fps background) stretched a 520 ms dt-based wait into seconds.",
+    "Built a local mock of ctx (phone frame, safe areas, logo, input, score, memory, music, fx, tune, lifecycle) to exercise the Bit in a desktop browser, since no preview endpoint exists."
+  ],
+  "suggestions": [
+    "Ship a reference mock of ctx or a browser preview for drafts; most of the integration time went into building one.",
+    "State explicitly whether registry fonts need a manifest declaration, with a manifest example.",
+    "Document the local memory channel declaration shape with an example alongside the records example.",
+    "State what memory.local get() does on a transient failure and whether the host caches the last value; the Bit now refuses to write until a read has succeeded, which an SDK note could make the default guidance."
+  ],
+  "docsMissing": [],
+  "runtimeIssues": [],
+  "validatorIssues": [],
+  "libraryIssues": [],
+  "uploadIssues": [],
+  "pairingIssues": [],
+  "timeSpentMinutes": 250,
+  "iterationCount": 9,
+  "notes": "Conversion of an existing Expo/React Native game: the rules engine and AI were ported to plain JS and proven against the original with a 2,000-game lockstep test; the UI was rebuilt on Canvas2D + DOM HUD. Tested in a local host mock, reviewed by a five-lens adversarial audit and a fresh-context novice playthrough; not yet verified on a phone at the time of this upload."
+}
